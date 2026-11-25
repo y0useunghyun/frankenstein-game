@@ -12,11 +12,22 @@
   #wrap { position: relative; }
   canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
   /* 아래 상자: 원문 */
-  #box { position: absolute; left: 4%; right: 4%; top: 5%; padding: 2.2% 2.8%; background: #0b0a0dee; border: 3px solid #ece6d6;
-    font-size: var(--fs); line-height: 1.6; display: none; }
-  #box.on { display: block; }
-  #box .who { font-size: .75em; opacity: .55; margin-bottom: .3em; }
-  #hint { position: absolute; z-index: 6; left: 50%; top: 17%; transform: translateX(-50%); width: max-content; max-width: 78%; padding: .5em 1em;
+  /* 아래 대화창: 게임 화면 밑에 따로 자리 잡은 칸 */
+  #wrap { display: grid; grid-template-rows: auto auto; width: var(--cw); background: #07060a; }
+  /* 프랑켄슈타인 대화창: 시체빛 금속판 + 꿰맨 실밥 + 위에 박힌 철심 두 개 */
+  #box { position: relative; box-sizing: border-box; min-height: var(--bh); margin: calc(var(--bh) * .14) 3% calc(var(--bh) * .1); padding: 1.1em 1.5em 1.4em;
+    background: linear-gradient(#323a35, #222824 65%, #1a1f1c); border: 3px solid #8e998f; border-radius: 2px;
+    outline: 2px dashed #6c7a6c; outline-offset: -9px; box-shadow: inset 0 0 0 1px #0d100e, 0 6px 0 #050605;
+    font-size: calc(var(--fs) * 1.1); line-height: 1.6; color: #e6ebe2; }
+  #box::before, #box::after { content: ''; position: absolute; top: -6px; width: 38px; height: 7px; border-radius: 4px;
+    background: linear-gradient(#fbfbfb, #c9cacb 35%, #77797c 58%, #b9bbbe); box-shadow: 0 2px 2px #000a; }
+  #box::before { left: 12%; transform: rotate(-3deg); }
+  #box::after { right: 12%; transform: rotate(2deg); }
+  #box > * { visibility: hidden; }
+  #box.on > * { visibility: visible; }
+  #box .who { font-size: .7em; color: #9fb09c; margin-bottom: .2em; }
+  body.landing #box { display: none; }
+  #hint { position: absolute; z-index: 6; left: 50%; top: calc(var(--ch) * .17); transform: translateX(-50%); width: max-content; max-width: 78%; padding: .5em 1em;
     background: #0b0a0de6; border: 3px solid #f1d54a; color: #f1d54a; font-size: var(--fs); line-height: 1.45; text-align: center; display: none; }
   #hint.on { display: block; }
   #hint.low { top: auto; bottom: 4%; position: fixed; border: 0; color: #ece6d6; font-size: calc(var(--fs) * .8); }
@@ -27,7 +38,7 @@
   #roll h2 { font-size: 1.6em; font-weight: 400; text-align: center; margin: 0 0 .3em; }
   #roll .sub { text-align: center; opacity: .5; margin: 0 0 4em; }
   #roll .fin { text-align: center; font-size: 1.6em; margin: 4em 0 0; }
-  #box .more { position: absolute; right: 1.2%; bottom: .6%; animation: blink 1s steps(2) infinite; }
+  #box .more { position: absolute; left: 50%; bottom: .2em; transform: translateX(-50%); color: #b8c4b4; animation: blink 1s steps(2) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
   /* 첫 화면: 원문이 흐르는 바탕 + 창 하나 + 버튼 하나 */
   #front { position: fixed; inset: 0; overflow: hidden; display: none; cursor: grab; }
@@ -104,6 +115,9 @@ const Q = {
   work:   ['나는 광기에 사로잡힌 채 그와 같은 존재를 또하나 만들어주겠다던 약속을 떠올리고는, 격한 감정에 부들부들 떨며 내가 몰두해 만들고 있던 것을 갈가리 찢어버렸다.'],
   window: ['그러나 기억하라, 네놈의 결혼식 날 밤, 내가 함께 있겠다.'],
   sled:   ['그 몇 주 전, 나는 썰매와 개 몇마리를 구해 도저히 믿지 못할 속도로 설원을 가르고 달렸다.', '나는 북극의 영원한 얼음을 쫓아갈 테니.'],
+  crack:  ['그런데 지금, 숙적이 내 손에 당장이라도 잡힐 것만 같은 이때, 내 모든 희망은 갑자기 꺼져버렸고 어느 때보다도 막막하게 놈의 자취를 놓치고 말았다.',
+           '그리고 지진처럼 엄청난 충격과 함께 빙하가 쩍 쪼개져 어마어마한 굉음을 내며 갈라졌다.'],
+  paddle: ['나는 곧 썰매 일부를 부수어 노를 만들었다.', '이렇게 해서 엄청난 피로와 싸우며 이 얼음뗏목을 당신 배가 있는 쪽으로 저어 올 수 있었다.'],
   deck:   ['마침내 그는 눈을 떴지만 호흡이 힘들어 말을 할 수가 없었습니다.'],
   vend:   ['“저것 또한 내 희생자요!” 그가 외쳤습니다.', '“아! 차갑게 식었구나. 내게 대답해주지는 못하겠어.”'],
   end:    ['그리고 순식간에 세찬 파도에 떠밀려 어둠 속으로 아득히 사라져갔습니다.'],
@@ -152,9 +166,11 @@ const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 function fit() {                                         // 정수 배율로 꽉 차게
   W = innerWidth < innerHeight ? 160 : 256; if (cv.width !== W) cv.width = W;
   const land = document.body.classList.contains('landing');
-  const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : Math.min(innerWidth / W, innerHeight / H);
+  const BOX = 0.4;                                       // 대화창 칸 높이 = 게임 화면 높이 × 0.4
+  const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : Math.min(innerWidth / W, innerHeight / (H * (1 + BOX)));
   const s = f >= 2 ? Math.floor(f) : f;   // 크면 정수 배율, 폰 세로는 꽉 차게
   cv.style.width = W * s + 'px'; cv.style.height = H * s + 'px';
+  const wr = document.getElementById('wrap'); wr.style.setProperty('--ch', H * s + 'px'); wr.style.setProperty('--cw', W * s + 'px'); wr.style.setProperty('--bh', H * s * BOX * 0.82 + 'px');
   document.getElementById('wrap').style.setProperty('--fs', Math.max(13, s * 5.2) + 'px');
 }
 addEventListener('resize', fit); fit();
@@ -287,7 +303,7 @@ const VROUTE = [
       { x: 135, q: 'work', who: '빅토르' },
       { x: 235, q: 'window', who: '괴물', auto: true },
     ] },
-  { name: '북극 · 썰매', w: 400, fx: 'snow', last: true,
+  { name: '북극 · 썰매', w: 560, fx: 'snow', last: true,
     bg(g, w) {
       R(g, 0, 0, w, H, '#0e1118'); stars(g, w, 60, '#9fb0c8', 6); R(g, 0, FLOOR, w, H, '#cfd8e2');
       for (let x = 0; x < w; x += 13) R(g, x, FLOOR + 3 + (x % 7), 7, 1, '#aab6c4');
@@ -295,7 +311,8 @@ const VROUTE = [
     },
     things: [
       { x: 80, q: 'sled', who: '빅토르' },
-      { x: 330, q: 'deck', who: '월턴', auto: true },
+      { x: 500, q: 'deck', who: '월턴', auto: true },
+      { x: 0, q: 'crack', who: '빅토르', auto: true },
     ] },
 ];
 const ROUTES = { creature: CREATURE, victor: VROUTE };
@@ -303,7 +320,7 @@ const ROUTES = { creature: CREATURE, victor: VROUTE };
 const PAR = 0.35;
 [[CREATURE[0], ART.lab], [CREATURE[1], ART.forest], [CREATURE[2], ART.cottage], [CREATURE[3], ART.village], [CREATURE[4], ART.glacier],
  [CREATURE[5], ART.arctic, g => ART.ship(g, 40)], [VROUTE[0], ART.bedroom], [VROUTE[1], ART.storm], [VROUTE[2], ART.glacier],
- [VROUTE[3], ART.orkney], [VROUTE[4], ART.arctic, g => ART.ship(g, 300)]].forEach(([s, a, extra]) => {
+ [VROUTE[3], ART.orkney], [VROUTE[4], { far: ART.arctic.far, near: (g, w) => ART.arctic.near(g, w, { iceEnd: w }) }, g => ART.ship(g, 470)]].forEach(([s, a, extra]) => {
   s.bg = (g, w) => { a.near(g, w); extra && extra(g); }; s.far = a.far;
 });
 let farCache = null;
@@ -452,19 +469,40 @@ VROUTE[3].mech = {
     }
   },
 };
-VROUTE[4].mech = {
-  hint: m => !read.has('sled') ? '썰매에 올라타세요' : '괴물이 달아납니다. → 를 꾹 눌러 쫓으세요. 너무 멀어지면 놓칩니다',                                       // 북극: 썰매로 괴물을 쫓아 배까지
-  init(m) { m.cx = 240; },
+VROUTE[4].mech = {                                       // 북극: 썰매로 괴물 썰매를 따라붙음 → 빙하가 갈라짐 → 유빙을 저어 배까지
+  hint: m => !read.has('sled') ? '썰매에 올라타세요'
+    : !read.has('crack') ? '괴물의 썰매가 앞서 달립니다. → 를 꾹 눌러 따라붙으세요'
+    : '얼음이 갈라졌습니다. 유빙을 저어 월턴의 배까지 가세요 →',
+  init(m) { m.cx = 0; },
   tick(m) {
     if (!read.has('sled')) return;
-    m.ride = m.hideMe = 1; m.speed = 1.05;
-    m.cx = Math.min(440, m.cx + 0.8 + 0.3 * Math.sin(t / 40));
-    if (m.cx - me.x > 170) return fail('놓쳤다');
-    if (me.x > 300 && !read.has('deck')) say('deck', '월턴', () => { ending = 4; raftX = 0; });
+    m.hideMe = 1;
+    if (!read.has('crack')) {
+      m.ride = 1; m.speed = 1.05;
+      if (!m.cx) m.cx = me.x + 110;
+      m.cx += 0.78 + 0.18 * Math.sin(t / 45);
+      const gap = m.cx - me.x;
+      if (gap > 230) return fail('놓쳤다');
+      if (gap < 30) { m.crackX = me.x + 20; say('crack', '빅토르'); }
+      return;
+    }
+    m.ride = 0; m.speed = 0.45; m.cx += 1.6;            // 갈라진 뒤: 괴물은 멀어지고, 나는 유빙 위에서 천천히
+    if (me.x > 455 && !read.has('deck')) say('paddle', '빅토르', () => say('deck', '월턴', () => { ending = 4; raftX = 0; }));
   },
   draw(m) {
-    if (m.ride) sled(me.x - 8, VICTOR[0]); else R(ctx, 64, 110, 26, 3, '#5a4030'), R(ctx, 62, 113, 30, 2, '#3a2d22');
-    if (m.cx < 420) npc(ME[walk()], m.cx, 1);
+    if (read.has('crack')) {                             // 갈라진 바다
+      const x0 = m.crackX;
+      R(ctx, x0, FLOOR, 600, H - FLOOR, '#0a1220'); for (let x = x0; x < x0 + 600; x += 9) R(ctx, x + (t >> 3) % 5, FLOOR + 4 + (x % 13), 5, 1, '#1e3048');
+      for (let y = FLOOR; y < H; y += 2) R(ctx, x0 - 2 + ((y * 7) % 3), y, 2, 2, '#8fa0b2');
+      R(ctx, me.x - 6, FLOOR - 1, 26, 4, '#cdd8e4'); R(ctx, me.x - 6, FLOOR + 3, 26, 2, '#8fa0b2');   // 유빙
+      npc(VICTOR[(me.step >> 4) % 2], me.x, 1, 1, FLOOR - 1);
+    } else if (m.ride) sled(me.x - 8, VICTOR[0]);
+    else { R(ctx, 64, 110, 26, 3, '#5a4030'); R(ctx, 62, 113, 30, 2, '#3a2d22'); npc(VICTOR[(me.step >> 4) % 2], me.x, me.dir); }
+    if (m.cx && m.cx < 620) sled(m.cx, ME[0]);
+    if (m.ride && m.cx) {                                // 거리: 가까울수록 노랗게 참
+      const gap = Math.max(0, Math.min(1, (m.cx - me.x - 30) / 200));
+      R(ctx, cam + W / 2 - 40, 36, 80, 4, '#0b0a0d'); R(ctx, cam + W / 2 - 39, 37, 78 * (1 - gap), 2, gap < 0.3 ? '#f1d54a' : '#ece6d6');
+    }
   },
 };
 let route = 'creature', sel = 0;
@@ -632,7 +670,7 @@ function update() {
     if (v && !M.lock) { me.dir = v; me.x += v * (M.speed || 0.9); me.step++; }
     s.mech && s.mech.tick(M);
     if (failT || box) return;
-    const done = s.things.every(th => read.has(th.q)) && (!s.mech || !s.mech.done || s.mech.done(M)), max = s.last ? (route === 'creature' ? 290 : 340) : (done ? s.w : s.w - 18);
+    const done = s.things.every(th => read.has(th.q)) && (!s.mech || !s.mech.done || s.mech.done(M)), max = s.last ? (route === 'creature' ? 290 : 520) : (done ? s.w : s.w - 18);
     me.x = Math.max(4, Math.min(max, me.x));
     if (me.x >= s.w - 4 && done && !s.last) enter(scene + 1);
   }
