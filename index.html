@@ -256,7 +256,7 @@ const VROUTE = [
       for (let x = 210; x < w; x += 18) R(g, x, 60, 2, 58, '#232826');
     },
     things: [
-      { x: 110, q: 'bed', who: '빅토르' },
+      { x: 110, q: 'bed', who: '빅토르', auto: true },
       { x: 270, q: 'yard', who: '빅토르', auto: true },
     ] },
   { name: '제네바 근교 · 폭풍우', w: 420, fx: 'storm',
@@ -409,8 +409,10 @@ VROUTE[0].mech = {
   hint: m => !read.has('bed') ? '' : !m.gone ? '내가 만든 괴물이 쫓아옵니다. 멈추지 말고 안뜰로 도망가세요 →' : '',                                       // 침실·안뜰: 커튼을 들친 괴물에게서 달아남
   init(m) { m.cx = 0; },
   tick(m) {
-    if (!read.has('bed') || m.gone) return;
-    if (!m.cx) m.cx = Math.max(30, me.x - 40);
+    if (m.gone) return;
+    if (!read.has('bed')) { if (!m.said) { m.said = 1; say('bed', '빅토르'); } return; }   // 들어오자마자 커튼이 들쳐짐
+    if (!m.cx) { m.cx = 96; m.wait = 45; }                 // 침대 커튼 자리에서 나와 (잠깐 멈칫) 쫓아옴
+    if (m.wait > 0) { m.wait--; return; }
     m.cx += 0.7; if (dist(m.cx, me.x) < 10) return fail('붙잡혔다');
     if (me.x > 262 && !read.has('yard')) say('yard', '빅토르', () => { m.gone = 1; });
   },
@@ -494,7 +496,7 @@ function startIntro() {
 }
 function nextBeat() {
   if (intro.b >= Q.make.length) {                        // 다 봤으면 일어선 자리에서 게임 시작
-    intro = null; enter(0); me.x = route === 'creature' ? 96 : 24; title = 60; return;
+    intro = null; enter(0); me.x = route === 'creature' ? 96 : 128; title = 60; return;   // 빅토르: 침대 옆에서 깨어남
   }
   intro.t = 0;
   openBox([Q.make[intro.b]], '빅토르', () => { intro.b++; nextBeat(); });
