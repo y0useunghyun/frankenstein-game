@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>프랑켄슈타인</title>
+<style>
+  @font-face { font-family: Galmuri; src: url(Galmuri11.woff2) format('woff2'); }
+  html, body { margin: 0; height: 100%; background: #0b0a0d; overflow: hidden; overscroll-behavior: none; }
+  body { display: flex; align-items: center; justify-content: center; font-family: Galmuri, monospace; color: #ece6d6;
+    user-select: none; -webkit-user-select: none; touch-action: none; }
+  #wrap { position: relative; }
+  canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  /* 아래 상자: 원문 */
+  #box { position: absolute; left: 4%; right: 4%; top: 5%; padding: 2.2% 2.8%; background: #0b0a0dee; border: 3px solid #ece6d6;
+    font-size: var(--fs); line-height: 1.6; display: none; }
+  #box.on { display: block; }
+  #box .who { font-size: .75em; opacity: .55; margin-bottom: .3em; }
+  #hint { position: absolute; z-index: 6; left: 50%; top: 17%; transform: translateX(-50%); width: max-content; max-width: 78%; padding: .5em 1em;
+    background: #0b0a0de6; border: 3px solid #f1d54a; color: #f1d54a; font-size: var(--fs); line-height: 1.45; text-align: center; display: none; }
+  #hint.on { display: block; }
+  #hint.low { top: auto; bottom: 4%; position: fixed; border: 0; color: #ece6d6; font-size: calc(var(--fs) * .8); }
+  #credits { position: fixed; inset: 0; z-index: 5; background: #0b0a0d; overflow: hidden; display: none; }
+  #credits.on { display: block; }
+  #roll { position: absolute; left: 50%; top: 0; width: min(560px, 86vw); transform: translateX(-50%); will-change: transform;
+    font-size: calc(var(--fs) * .78); line-height: 1.75; text-align: left; word-break: keep-all; color: #ece6d6; }
+  #roll h2 { font-size: 1.6em; font-weight: 400; text-align: center; margin: 0 0 .3em; }
+  #roll .sub { text-align: center; opacity: .5; margin: 0 0 4em; }
+  #roll .fin { text-align: center; font-size: 1.6em; margin: 4em 0 0; }
+  #box .more { position: absolute; right: 1.2%; bottom: .6%; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  /* 첫 화면: 원문이 흐르는 바탕 + 창 하나 + 버튼 하나 */
+  #front { position: fixed; inset: 0; overflow: hidden; display: none; cursor: grab; }
+  body.landing #front { display: block; }
+  #front.drag { cursor: grabbing; }
+  #flow { position: absolute; left: 50%; top: 0; width: min(880px, 90vw); transform: translateX(-50%); will-change: transform;
+    font-size: 15px; line-height: 1.9; color: #ece6d6; opacity: .3; word-break: keep-all; }
+  #stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 22px; }
+  #bar { display: none; height: 26px; padding: 0 10px; background: #ece6d6; color: #0b0a0d; font-size: 13px; align-items: center; justify-content: space-between; }
+  #bar i { font-style: normal; letter-spacing: 3px; }
+  body.landing #bar { display: flex; }
+  body.landing #wrap { border: 3px solid #ece6d6; background: #0b0a0d; box-shadow: 0 24px 70px #000c; }
+  #start { display: none; font: 18px Galmuri, monospace; color: #0b0a0d; background: #f1d54a; border: 0; padding: 12px 28px;
+    box-shadow: 0 4px 0 #9a8420, 0 0 0 3px #0b0a0d; cursor: pointer; }
+  #start:active { transform: translateY(3px); box-shadow: 0 1px 0 #9a8420, 0 0 0 3px #0b0a0d; }
+  body.landing #start { display: block; }
+  body.landing .pad { display: none !important; }
+  /* 손가락 버튼 (폰) */
+  .pad { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); display: none; gap: 12px; }
+  .pad button { width: 64px; height: 64px; border: 3px solid #ece6d6; background: #0b0a0daa; color: #ece6d6; font: 22px Galmuri, monospace; }
+  .pad button:active { background: #ece6d6; color: #0b0a0d; }
+  #padL { left: 16px; } #padR { right: 16px; }
+  @media (pointer: coarse) { .pad { display: flex; } }
+</style>
+</head>
+<body class="landing">
+<div id="front"><div id="flow"></div></div>
+<div id="stage">
+<div id="wrap">
+  <div id="bar"><span>프랑켄슈타인</span><i>■□×</i></div>
+  <canvas id="c" width="256" height="144"></canvas>
+  <div id="hint"></div>
+  <div id="box"><div class="who" id="who"></div><div id="say"></div><span class="more">▼</span></div>
+</div>
+<button id="start">게임 시작하기</button>
+</div>
+<div id="credits"><div id="roll"></div></div>
+<div class="pad" id="padL"><button data-k="left" aria-label="왼쪽">◀</button><button data-k="right" aria-label="오른쪽">▶</button></div>
+<div class="pad" id="padR"><button data-k="act" aria-label="읽기">●</button></div>
+
+<script src="novel.js"></script>
+<script src="bg.js"></script>
+<script>
+// ───────── 원문 (『프랑켄슈타인』 김선형 옮김, 문학동네) ─────────
+const Q = {
+  make:   ['노동의 성과를 목도하게 된 것은 11월의 어느 황량한 날이었다.',
+           '차라리 고뇌에 가까운 불안에 휩싸여, 나는 주위에 흩어진 생명의 도구들을 그러모아 발치에 드러누워 있는 생명 없는 물체에 존재의 불꽃을 주입하려 했다.',
+           '벌써 새벽 한시였다.',
+           '빗방울이 음침하게 유리창을 두들기고 내 촛불도 거의 다 타버렸는데, 바로 그때 나는 반쯤 꺼진 촛불빛을 빌려, 생물체가 흐릿한 노란 눈을 뜨고 있는 광경을 보았다.',
+           '그것이 힘겹게 숨을 쉬자 경련 같은 움직임이 사지를 뒤흔들었다.',
+           '내가 창조해낸 존재의 면면을 차마 견디지 못하고 실험실에서 뛰쳐나와 오랫동안 침실을 서성였지만, 도저히 마음을 진정하고 잠을 이룰 수가 없었다.'],
+  body:   ['사지는 비율을 맞추어 제작되었고, 생김생김 역시 아름다운 것으로 선택했다.', '아름다움이라니! 하느님, 맙소사!'],
+  moon:   ['희미한 노란색 달빛이 억지로 창문 셔터 틈새를 비집고 들어오는 순간, 눈앞에 그 괴물이 보였다.'],
+  fire:   ['어느 날, 추위에 떨고 있던 나는 방량하던 거지들이 놓고 간 불을 발견했는데, 그로부터 열기를 느끼고는 기쁨에 사로잡혔다.',
+           '너무 기쁜 나머지 아직 다 타지 않은 불씨에 맨손을 댔다가 고통스러운 비명을 지르며 곧 손을 떼었다.',
+           '밤이 되고 잠이 오자, 불이 꺼져버릴까봐 지독하게 겁이 났다.'],
+  violin: ['그러자 노인은 악기를 집어들어 연주를 하기 시작했는데, 그 소리는 개똥지빠귀나 나이팅게일의 지저귐보다 더 달콤했다.',
+           '노인은 달콤하고 구슬픈 곡조를 연주했는데, 그 음악이 사랑스러운 그녀의 눈에서 눈물을 이끌어내는 걸 나는 알 수 있었다.'],
+  books:  ['『실낙원』과 『플루타르코스 영웅전』 한 권, 그리고 『젊은 베르테르의 슬픔』이었다.',
+           '이건 무슨 뜻일까? 나는 누구일까? 나는 무엇일까? 어디서 왔을까? 내 목적지는 어디일까? 이런 질문들이 끝없이 떠올랐지만 해답을 찾을 길이 없었다.'],
+  hut:    ['그리고 나를 보더니 큰 소리로 비명을 질러대며 오두막 밖으로 뛰쳐나가 그 노쇠한 몸으로는 상상할 수 없는 속도로 벌판을 가로질러 뛰어가는 것이었다.'],
+  door:   ['하지만 문간에 발을 들여놓기가 무섭게 아이들이 비명을 질렀고 한 여자가 기절했다.'],
+  ice:    ['거대한 빙하가 길 쪽으로 다가왔다.',
+           '비와 습기와 추위에는 예날부터 단련된 몸이었기에 나는 혼자서 몽탕베르산 정상에 오르기로 결심했다.'],
+  peak:   ['나는 당신의 아담이 되어야 하는데 오히려 타락한 천사가 되어, 잘못도 없이 기쁨을 박탈당하고 당신에게서 쫓겨났다.',
+           '나는 자애롭고 선했다.', '불행이 나를 악마로 만들었다.'],
+  ship:   ['저는 아무리 애를 써도 북극이 서리로 뒤덮인 황량한 오지라는 사실이 믿기지 않아요.'],
+  raft:   ['나는 당신 배에서 내려 여기로 날 데려다준 얼음뗏목을 타고 지구의 최북단으로 떠날 것이다.'],
+  bed:    ['희미한 노란색 달빛이 억지로 창문 셔터 틈새를 비집고 들어오는 순간, 눈앞에 그 괴물이 보였다.', '내가 창조해낸 참혹한 괴물이.', '그는 침대 커튼을 들쳤다.'],
+  yard:   ['그리고 살던 집에 딸린 안뜰에 몸을 숨기고, 거기서 끔찍한 괴로움에 밤새도록 서성거리며, 귀를 쫑긋 세우고 무슨 소리가 날 때마다 내가 그토록 참담하게 생명을 불어넣은 악마 같은 시체가 다가올까 두려움에 떨었다.'],
+  lake:   ['훤히 밝히는 번개 불빛에 호수의 수면은 광활한 불바다가 되었다.', '“윌리엄, 사랑하는 천사! 이것이 네 장례식이다. 너를 위한 비가다!”'],
+  tree:   ['이렇게 말하는 순간, 어둠 속 나뭇등걸 뒤에서 내 근처로 슬며시 지나가는 형체를 보았다.', '번갯불의 섬광에 정체가 뚜렷하게 드러났다.', '놈이 바로 살인자였다! 의심의 여지가 없었다.'],
+  mate:   ['“모든 인간이 제 가슴에 품을 반려자를 맞고, 모든 짐승이 제 짝을 찾는데, 나만 혼자여야 한단 말인가? 내게도 사랑의 감정이 있었는데, 돌아온 건 혐오와 경멸뿐이었다.'],
+  work:   ['나는 광기에 사로잡힌 채 그와 같은 존재를 또하나 만들어주겠다던 약속을 떠올리고는, 격한 감정에 부들부들 떨며 내가 몰두해 만들고 있던 것을 갈가리 찢어버렸다.'],
+  window: ['그러나 기억하라, 네놈의 결혼식 날 밤, 내가 함께 있겠다.'],
+  sled:   ['그 몇 주 전, 나는 썰매와 개 몇마리를 구해 도저히 믿지 못할 속도로 설원을 가르고 달렸다.', '나는 북극의 영원한 얼음을 쫓아갈 테니.'],
+  deck:   ['마침내 그는 눈을 떴지만 호흡이 힘들어 말을 할 수가 없었습니다.'],
+  vend:   ['“저것 또한 내 희생자요!” 그가 외쳤습니다.', '“아! 차갑게 식었구나. 내게 대답해주지는 못하겠어.”'],
+  end:    ['그리고 순식간에 세찬 파도에 떠밀려 어둠 속으로 아득히 사라져갔습니다.'],
+};
+
+// ───────── 도트 그림: 글자 하나 = 픽셀 하나 ─────────
+const PAL = { k: '#141218', h: '#26222b', s: '#a3b19a', S: '#76866f', e: '#f1d54a', c: '#3f3a47', C: '#2a2630', p: '#34303b', b: '#4a3a2c',
+  w: '#ece6d6', r: '#b5533d', o: '#f2a541', y: '#ffe08a', g: '#5c6b4f', n: '#8b7b63' };
+const ME = [
+  [ // 걷기 0
+  '....kkkk....', '...khhhhk...', '..khhhhhhk..', '..khsssshk..', '..kseSSesk..', '..kssssssk..', '..kSsSSsSk..',
+  '...kSSSSk...', '..kkcSScckk.', '.kcccccccck.', '.kcCcccCcck.', 'kscCcccCccsk', 'kscCcccCccsk', 'ksScCccCcSsk',
+  '.k.cCcccCck.', '...cccccck..', '...ppppppk..', '...pp..ppk..', '...pp..ppk..', '...pp...pp..', '..ppp...ppk.',
+  '..kkk...kkk.' ],
+  [ // 걷기 1
+  '....kkkk....', '...khhhhk...', '..khhhhhhk..', '..khsssshk..', '..kseSSesk..', '..kssssssk..', '..kSsSSsSk..',
+  '...kSSSSk...', '..kkcSScckk.', '.kcccccccck.', '.kcCcccCcck.', '.kcCcccCcck.', 'kscCcccCccsk', 'ksScCccCcSsk',
+  '.ksScccCck..', '...cccccck..', '...ppppppk..', '....pppp.k..', '....pppp....', '....ppp.....', '....kkpk....',
+  '....kkk.....' ],
+];
+const VICTOR = [
+  ['...kkkk...', '..khhbbk..', '..kbbbbk..', '..kwwwbk..', '..kwkwwk..', '..kwwwwk..', '...kwwk...', '..kCwwCk..', '.kCCwwCCk.',
+   '.kCCwwCCk.', 'kwCCwwCCwk', '.kCCCCCCk.', '..CCCCCC..', '..pp..pp..', '..pp..pp..', '..kk..kk..'],
+  ['...kkkk...', '..khhbbk..', '..kbbbbk..', '..kwwwbk..', '..kwkwwk..', '..kwwwwk..', '...kwwk...', '..kCwwCk..', 'wkCCwwCCkw',
+   '.kCCwwCCk.', '..CCwwCC..', '.kCCCCCCk.', '..CCCCCC..', '...pppp...', '..pp..pp..', '.kk....kk.'],
+];
+const VILLAGER = [
+  ['...kkkk...', '..kbbbbk..', '..kwwwwk..', '..kwkwkk..', '..kwwwwk..', '...kkkk...', '..krrrrk..', '.krrrrrrk.', '.wrrrrrrw.',
+   '..rrrrrr..', '..rrrrrr..', '..nnnnnn..', '..nn..nn..', '..nn..nn..', '..kk..kk..'],
+  ['...kkkk...', '..kbbbbk..', '..kwwwwk..', '..kwkwkk..', '..kwwwwk..', '...kkkk...', '..krrrrk..', 'wkrrrrrrkw', '..rrrrrr..',
+   '..rrrrrr..', '..rrrrrr..', '..nnnnnn..', '...nnnn...', '..nn..nn..', '.kk....kk.'],
+];
+const SLEEP = ME[0].map(r => r.replace(/e/g, 'S'));       // 눈 감은 몸
+const SPR = new Map();
+function sprite(map) {                                   // 글자 그림 → 캔버스 (한 번만 그림)
+  if (SPR.has(map)) return SPR.get(map);
+  const cv = document.createElement('canvas'); cv.width = map[0].length; cv.height = map.length;
+  const g = cv.getContext('2d');
+  map.forEach((row, y) => [...row].forEach((ch, x) => { if (PAL[ch]) { g.fillStyle = PAL[ch]; g.fillRect(x, y, 1, 1); } }));
+  SPR.set(map, cv); return cv;
+}
+
+// ───────── 화면 ─────────
+let W = 256; const H = 144, FLOOR = 118;            // 폰 세로면 W = 160 (보이는 폭을 좁혀 크게)
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+function fit() {                                         // 정수 배율로 꽉 차게
+  W = innerWidth < innerHeight ? 160 : 256; if (cv.width !== W) cv.width = W;
+  const land = document.body.classList.contains('landing');
+  const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : Math.min(innerWidth / W, innerHeight / H);
+  const s = f >= 2 ? Math.floor(f) : f;   // 크면 정수 배율, 폰 세로는 꽉 차게
+  cv.style.width = W * s + 'px'; cv.style.height = H * s + 'px';
+  document.getElementById('wrap').style.setProperty('--fs', Math.max(13, s * 5.2) + 'px');
+}
+addEventListener('resize', fit); fit();
+
+const R = (g, x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x | 0, y | 0, w | 0, h | 0); };
+function ridge(g, w, base, amp, seed, c) {               // 산·언덕: 열마다 높이
+  g.fillStyle = c;
+  for (let x = 0; x < w; x++) {
+    const y = base - amp * (0.5 + 0.3 * Math.sin(x * 0.031 + seed) + 0.2 * Math.sin(x * 0.087 + seed * 2));
+    g.fillRect(x, y | 0, 1, H);
+  }
+}
+function stars(g, w, n, c, seed) { for (let i = 0; i < n; i++) R(g, (Math.sin(i * 91 + seed) * 0.5 + 0.5) * w, (Math.sin(i * 37 + seed) * 0.5 + 0.5) * 70, 1, 1, c); }
+
+// ───────── 장면 여섯 ─────────
+// things: x = 바닥 기준 가운데, q = 원문 키
+const CREATURE = [
+  { name: '잉골슈타트 · 꼭대기 층 작업실', w: 320, fx: 'rain', rainIn: [[162, 32, 36, 42]],
+    bg(g, w) {
+      R(g, 0, 0, w, H, '#1a1824'); R(g, 0, FLOOR, w, H, '#2b2531');
+      for (let x = 0; x < w; x += 16) R(g, x, FLOOR, 1, H, '#231e29');
+      for (let x = 8; x < w; x += 40) R(g, x, 20, 2, FLOOR - 20, '#211e2b');         // 벽 기둥
+      R(g, 160, 30, 40, 46, '#0f0e16'); R(g, 162, 32, 36, 42, '#2b3550'); R(g, 179, 32, 2, 42, '#0f0e16'); R(g, 162, 52, 36, 2, '#0f0e16');
+      R(g, 186, 38, 6, 6, '#e8dca0');                                                 // 달
+      R(g, 20, 92, 70, 6, '#4a3a2c'); R(g, 24, 98, 4, 20, '#3a2d22'); R(g, 82, 98, 4, 20, '#3a2d22');   // 작업대
+      R(g, 280, 54, 26, 64, '#3a2d22'); R(g, 282, 56, 22, 62, '#2a2019'); R(g, 300, 86, 2, 3, '#b8a070'); // 문
+    },
+    things: [
+      { x: 74, q: 'body', who: '빅토르', draw(g, t) { R(g, 70, 84, 4, 8, '#ece6d6'); R(g, 71, 80 + (t % 20 < 10), 2, 4, '#f2a541'); } },
+      { x: 180, q: 'moon', who: '빅토르', auto: true },
+    ] },
+  { name: '숲', w: 400, fx: 'night',
+    bg(g, w) {
+      R(g, 0, 0, w, H, '#141c22'); stars(g, w, 50, '#6b7b86', 1);
+      ridge(g, w, 96, 30, 1, '#1a2a26'); ridge(g, w, 112, 20, 4, '#1f3229');
+      for (let x = 10; x < w; x += 23) { const h = 30 + (x * 7 % 25); for (let i = 0; i < h; i++) R(g, x - i / 3, FLOOR - h + i, (i / 3) * 2 + 3, 1, '#16241e'); R(g, x, FLOOR - 6, 3, 6, '#2a2019'); }
+      R(g, 0, FLOOR, w, H, '#22261d');
+    },
+    things: [
+      { x: 210, q: 'fire', who: '괴물', light: true,
+        draw(g, t) { R(g, 202, 114, 16, 3, '#3a2d22'); const f = (t >> 3) % 3;
+          R(g, 205, 104 + f, 10, 10 - f, '#b5533d'); R(g, 207, 100 + f, 6, 12 - f, '#f2a541'); R(g, 209, 104, 2, 8, '#ffe08a'); } },
+    ] },
+  { name: '드 라세 가족의 오두막', w: 400, fx: 'night',
+    bg(g, w) {
+      R(g, 0, 0, w, H, '#1b1b26'); stars(g, w, 40, '#7c7c96', 2); ridge(g, w, 100, 24, 2, '#1f2433');
+      R(g, 0, FLOOR, w, H, '#26281f');
+      R(g, 110, 66, 110, 52, '#4a3a2c'); for (let i = 0; i < 30; i++) R(g, 104 + i, 66 - i, 122 - i * 2, 1, '#3a2b20');   // 오두막·지붕
+      R(g, 140, 80, 22, 18, '#f2c26b'); R(g, 150, 80, 2, 18, '#4a3a2c'); R(g, 140, 88, 22, 2, '#4a3a2c');                   // 창
+      R(g, 186, 86, 18, 32, '#2a2019');                                                                                       // 문
+      R(g, 250, 92, 46, 26, '#3a2d22'); for (let i = 0; i < 14; i++) R(g, 248 + i, 92 - i, 50 - i * 2, 1, '#2f241b');        // 헛간
+    },
+    things: [
+      { x: 151, q: 'violin', who: '괴물', light: true },
+      { x: 330, q: 'books', who: '괴물', draw(g) { R(g, 322, 110, 16, 8, '#5a4030'); R(g, 324, 108, 12, 2, '#7a5a40'); } },
+    ] },
+  { name: '마을', w: 420, fx: 'day', people: [150, 330],   // 달아나는 사람 (돌 던지는 사람은 mech)
+    bg(g, w) {
+      R(g, 0, 0, w, H, '#7d8794'); R(g, 0, 0, w, 30, '#6c7684'); ridge(g, w, 100, 18, 5, '#69735f');
+      R(g, 0, FLOOR, w, H, '#5d5a4c');
+      [[60, 34], [190, 40], [320, 36]].forEach(([x, hh]) => { R(g, x, FLOOR - hh, 56, hh, '#b8ad96'); for (let i = 0; i < 18; i++) R(g, x - 4 + i, FLOOR - hh - i, 64 - i * 2, 1, '#7a4a3a');
+        R(g, x + 22, FLOOR - 22, 12, 22, '#4a3a2c'); R(g, x + 6, FLOOR - hh + 8, 10, 8, '#3c4654'); R(g, x + 40, FLOOR - hh + 8, 10, 8, '#3c4654'); });
+    },
+    things: [
+      { x: 88, q: 'hut', who: '괴물' },
+      { x: 218, q: 'door', who: '괴물' },
+    ] },
+  { name: '몽탕베르 · 메르드글라스 빙하', w: 420, fx: 'snow',
+    bg(g, w) {
+      R(g, 0, 0, w, H, '#9aa7b4'); ridge(g, w, 70, 50, 3, '#d9e1e8'); ridge(g, w, 90, 34, 7, '#b9c6d2'); ridge(g, w, 108, 16, 9, '#a3b3c2');
+      R(g, 0, FLOOR, w, H, '#e8eef2'); for (let x = 0; x < w; x += 9) R(g, x, FLOOR + 2 + (x % 5), 5, 1, '#c8d3dc');
+      R(g, 300, 96, 40, 22, '#6d6f78'); R(g, 306, 92, 26, 6, '#7d808a');                                                     // 바위
+    },
+    things: [
+      { x: 140, q: 'ice', who: '빅토르' },
+      { x: 320, q: 'peak', who: '괴물', auto: true },
+    ] },
+  { name: '북극', w: 380, fx: 'snow', last: true,
+    bg(g, w) {
+      R(g, 0, 0, w, H, '#0e1118'); stars(g, w, 60, '#9fb0c8', 6);
+      R(g, 0, 104, w, H, '#0a0d14'); R(g, 0, FLOOR, 300, H, '#cfd8e2');
+      for (let x = 0; x < 300; x += 13) R(g, x, FLOOR + 3 + (x % 7), 7, 1, '#aab6c4');
+      R(g, 40, 86, 70, 14, '#2a2019'); R(g, 70, 46, 2, 40, '#2a2019'); R(g, 72, 50, 22, 24, '#9aa3ad');                       // 배
+    },
+    things: [
+      { x: 75, q: 'ship', who: '월턴' },
+      { x: 300, q: 'raft', who: '괴물', draw(g) { R(g, 300 + raftX, 116, 30, 4, '#e8eef2'); R(g, 300 + raftX, 120, 30, 2, '#8fa0b2'); } },
+    ] },
+];
+
+// 빅토르의 길
+const VROUTE = [
+  { name: '잉골슈타트 · 침실과 안뜰', w: 340, fx: 'rain', rainIn: [[62, 32, 32, 36], [200, 0, 140, H]],
+    bg(g, w) {
+      R(g, 0, 0, w, H, '#1a1824'); R(g, 0, FLOOR, w, H, '#2b2531');
+      R(g, 60, 30, 36, 40, '#0f0e16'); R(g, 62, 32, 32, 36, '#2b3550'); R(g, 77, 32, 2, 36, '#0f0e16'); R(g, 84, 38, 6, 6, '#e8dca0');
+      R(g, 100, 92, 60, 10, '#5a4030'); R(g, 100, 86, 14, 6, '#ece6d6'); R(g, 98, 50, 3, 68, '#3a2d22'); R(g, 101, 52, 18, 40, '#5b2f2f');   // 침대·커튼
+      R(g, 200, 0, 140, H, '#151a1c'); R(g, 200, FLOOR, 140, H, '#2a2e2a'); R(g, 200, 40, 4, 78, '#3a3f3a');                                 // 안뜰
+      for (let x = 210; x < w; x += 18) R(g, x, 60, 2, 58, '#232826');
+    },
+    things: [
+      { x: 110, q: 'bed', who: '빅토르' },
+      { x: 270, q: 'yard', who: '빅토르', auto: true },
+    ] },
+  { name: '제네바 근교 · 폭풍우', w: 420, fx: 'storm',
+    bg(g, w) {
+      R(g, 0, 0, w, H, '#151621'); ridge(g, w, 80, 34, 2, '#1c1f2c');
+      R(g, 0, 96, w, 22, '#20283a'); for (let x = 0; x < w; x += 7) R(g, x, 100 + (x % 11), 4, 1, '#2c364c');                                  // 호수
+      R(g, 0, FLOOR, w, H, '#1e211c');
+      [250, 300, 360].forEach(x => { R(g, x, 74, 6, 44, '#2a2019'); for (let i = 0; i < 22; i++) R(g, x - 12 + i / 2, 52 + i, 30 - i, 1, '#17221b'); });
+    },
+    things: [
+      { x: 120, q: 'lake', who: '빅토르' },
+      { x: 300, q: 'tree', who: '빅토르', auto: true },
+    ] },
+  { name: '몽탕베르 · 메르드글라스 빙하', w: 420, fx: 'snow', bg: (g, w) => CREATURE[4].bg(g, w),
+    things: [
+      { x: 140, q: 'ice', who: '빅토르' },
+      { x: 320, q: 'mate', who: '괴물', auto: true },
+    ] },
+  { name: '오크니 · 외딴 작업장', w: 360, fx: 'night',
+    bg(g, w) {
+      R(g, 0, 0, w, H, '#11151c'); stars(g, w, 30, '#5b6a80', 9); R(g, 0, 90, w, 28, '#16202c');
+      R(g, 60, 50, 240, 68, '#2a2630'); for (let i = 0; i < 20; i++) R(g, 56 + i, 50 - i, 248 - i * 2, 1, '#221f28');
+      R(g, 0, FLOOR, w, H, '#2b2531');
+      R(g, 220, 66, 30, 22, '#0f0e16'); R(g, 222, 68, 26, 18, '#2b3550');                                                                        // 창
+      R(g, 100, 96, 70, 6, '#4a3a2c'); R(g, 104, 102, 4, 16, '#3a2d22'); R(g, 162, 102, 4, 16, '#3a2d22');                                       // 작업대
+    },
+    things: [
+      { x: 135, q: 'work', who: '빅토르' },
+      { x: 235, q: 'window', who: '괴물', auto: true },
+    ] },
+  { name: '북극 · 썰매', w: 400, fx: 'snow', last: true,
+    bg(g, w) {
+      R(g, 0, 0, w, H, '#0e1118'); stars(g, w, 60, '#9fb0c8', 6); R(g, 0, FLOOR, w, H, '#cfd8e2');
+      for (let x = 0; x < w; x += 13) R(g, x, FLOOR + 3 + (x % 7), 7, 1, '#aab6c4');
+      R(g, 300, 86, 80, 14, '#2a2019'); R(g, 336, 46, 2, 40, '#2a2019'); R(g, 338, 50, 22, 24, '#9aa3ad');                                      // 월턴의 배
+    },
+    things: [
+      { x: 80, q: 'sled', who: '빅토르' },
+      { x: 330, q: 'deck', who: '월턴', auto: true },
+    ] },
+];
+const ROUTES = { creature: CREATURE, victor: VROUTE };
+// 배경은 bg.js: near = 바닥·건물(카메라와 같이), far = 하늘·산(천천히, 패럴랙스)
+const PAR = 0.35;
+[[CREATURE[0], ART.lab], [CREATURE[1], ART.forest], [CREATURE[2], ART.cottage], [CREATURE[3], ART.village], [CREATURE[4], ART.glacier],
+ [CREATURE[5], ART.arctic, g => ART.ship(g, 40)], [VROUTE[0], ART.bedroom], [VROUTE[1], ART.storm], [VROUTE[2], ART.glacier],
+ [VROUTE[3], ART.orkney], [VROUTE[4], ART.arctic, g => ART.ship(g, 300)]].forEach(([s, a, extra]) => {
+  s.bg = (g, w) => { a.near(g, w); extra && extra(g); }; s.far = a.far;
+});
+let farCache = null;
+
+// ───────── 장면마다 줄거리 움직임: init(상태) · tick(상태) · draw(상태) · done(상태) ─────────
+let M = {}, failT = 0, failMsg = '';
+const TOUCH = matchMedia('(pointer: coarse)').matches;
+const K = s => TOUCH ? s.replace(/←→/g, '◀ ▶').replace(/→/g, '▶').replace(/스페이스/g, '●') : s;
+let landing = true, howto = false;                      // 첫 화면 → (게임 시작하기) → 조작법 한 장 → 시점 고르기
+function startGame() {
+  if (!landing) return;
+  landing = false; howto = true; document.body.classList.remove('landing'); fit();
+}
+const dist = (a, b) => Math.abs(a - b), walk = () => (t >> 3) % 2;
+const FELIX = VILLAGER.map(f => f.map(r => r.replace(/r/g, 'c')));
+function fail(msg) { failT = 80; failMsg = msg; }
+function say(q, who, after) { openBox(Q[q], who, () => { read.add(q); after && after(); }); }
+function npc(map, x, dir, a = 1, floor = FLOOR) {
+  const c = sprite(map); ctx.save(); ctx.globalAlpha = a; ctx.translate(Math.round(x), floor - c.height);
+  if (dir < 0) { ctx.scale(-1, 1); ctx.translate(-c.width, 0); } ctx.drawImage(c, 0, 0); ctx.restore();
+}
+function bang(x, y) { ctx.fillStyle = '#ece6d6'; ctx.font = '12px Galmuri'; ctx.fillText('!', x, y); }
+function sled(x, rider) {                                // 개 썰매 (오른쪽으로 달림)
+  R(ctx, x, 110, 26, 3, '#5a4030'); R(ctx, x - 2, 113, 30, 2, '#3a2d22');
+  [30, 42, 54].forEach(dx => { const l = (t >> 2) % 2; R(ctx, x + dx, 106, 8, 5, '#d8d2c4'); R(ctx, x + dx + 6, 104, 3, 3, '#d8d2c4');
+    R(ctx, x + dx + 1, 111, 1, 4 + l, '#8b7b63'); R(ctx, x + dx + 6, 111, 1, 5 - l, '#8b7b63'); R(ctx, x + dx - 4, 108, 4, 1, '#3a2d22'); });
+  npc(rider, x + 8, 1, 1, 111);
+}
+
+// 괴물의 길
+CREATURE[0].mech = {
+  hint: () => '',                                     // 작업실: 다가가면 빅토르가 비명을 지르며 달아남
+  init(m) { m.vx = 210; },
+  tick(m) { if (!m.run && dist(me.x, m.vx) < 40) { m.run = 1; say('moon', '빅토르'); } else if (m.run) m.vx += 1.8; },
+  draw(m) { if (m.vx < 292) { npc(VICTOR[m.run ? walk() : 0], m.vx, m.run ? 1 : -1); if (m.run) bang(m.vx + 3, FLOOR - 20); } },
+};
+CREATURE[1].mech = {
+  hint: m => read.has('fire') && m.fed < 3 ? `불이 꺼져 갑니다. 반짝이는 땔감을 주워 와 불에 넣으세요 (${m.fed}/3)` : '',                                     // 숲: 불이 꺼지지 않게 땔감을 세 번 날라 옴
+  init(m) { m.fuel = 1; m.fed = 0; m.sticks = []; },
+  tick(m) {
+    if (!read.has('fire')) return;
+    if (!m.on) { m.on = 1; m.sticks = [40]; }
+    if (m.fed >= 3) return;
+    m.fuel -= 0.0011; if (m.fuel <= 0) return fail('불이 꺼졌다');
+    if (!m.carry) m.sticks = m.sticks.filter(x => { if (dist(me.x + 6, x) < 7) { m.carry = 1; return false; } return true; });
+    if (m.carry && dist(me.x + 6, 210) < 14) { m.carry = 0; m.fed++; m.fuel = Math.min(1, m.fuel + 0.5); if (m.fed < 3) m.sticks = [m.fed === 1 ? 370 : 30]; }
+  },
+  draw(m) {
+    if (!m.on) return;
+    m.sticks.forEach(x => { R(ctx, x - 5, 115, 10, 2, '#7a5636'); R(ctx, x - 1, 113, 2, 2, '#7a5636'); if ((t >> 4) % 2) R(ctx, x - 1, 104, 3, 3, '#ece6d688'); });
+    if (m.carry) R(ctx, me.x + 1, FLOOR - 13, 10, 2, '#7a5636');
+    R(ctx, 196, 92, 28, 3, '#0b0a0d'); R(ctx, 197, 93, 26 * Math.max(0, m.fuel), 1, m.fuel < 0.3 ? '#b5533d' : '#f2a541');
+    for (let i = 0; i < 3; i++) R(ctx, 202 + i * 6, 88, 4, 2, i < m.fed ? '#f1d54a' : '#ece6d633');
+  },
+  done: m => m.fed >= 3,
+};
+CREATURE[2].mech = {
+  hint: () => '펠릭스가 등불을 들고 오갑니다. 등불 앞에 서면 들킵니다. 등을 돌렸을 때 지나가세요',                                     // 오두막: 펠릭스의 등불에 들키지 않게
+  init(m) { m.fx = 240; m.d = -1; },
+  tick(m) {
+    m.fx += m.d * 0.45; if (m.fx < 112) m.d = 1; if (m.fx > 262) m.d = -1;
+    if (dist(me.x + 6, m.fx + 5) < 36 && Math.sign(me.x + 6 - (m.fx + 5)) === m.d) fail('들켰다');
+  },
+  draw(m) {
+    ctx.fillStyle = 'rgba(242,194,107,.12)'; ctx.beginPath(); const ox = m.fx + 5 + m.d * 4;
+    ctx.moveTo(ox, 100); ctx.lineTo(ox + m.d * 36, 86); ctx.lineTo(ox + m.d * 36, FLOOR); ctx.lineTo(ox, FLOOR); ctx.fill();
+    npc(FELIX[walk()], m.fx, m.d); R(ctx, m.fx + (m.d > 0 ? 10 : -2), 104, 2, 3, '#f2c26b');
+  },
+};
+CREATURE[3].mech = {
+  hint: () => '마을 사람들이 돌을 던집니다. 돌이 떨어진 틈에 달리세요 →',                                     // 마을: 날아오는 돌을 맞으면 뒤로 밀림
+  init(m) { m.th = [275, 395]; m.st = []; m.cd = 40; m.stun = 0; },
+  tick(m) {
+    m.lock = m.stun > 0; if (m.stun) m.stun--;
+    if (--m.cd <= 0) { const x = m.th.find(x => x > me.x + 20 && x - me.x < 180); if (x) { m.st.push({ x, y: FLOOR - 14, vx: (me.x + 6 - x) / 48, vy: -2.1 }); m.cd = 50; } }
+    m.st = m.st.filter(o => { o.x += o.vx; o.y += o.vy; o.vy += 0.088;
+      if (dist(o.x, me.x + 6) < 6 && o.y > FLOOR - 24 && !m.stun) { me.x -= 22; m.stun = 34; return false; } return o.y < FLOOR; });
+  },
+  draw(m) { m.th.forEach(x => npc(VILLAGER[m.cd > 40 ? 1 : 0], x, -1)); m.st.forEach(o => R(ctx, o.x - 1, o.y - 1, 3, 3, '#6d6f78')); },
+};
+CREATURE[4].mech = {
+  hint: () => read.has('ice') && !read.has('peak') ? '나를 만든 사람이 앞서 걸어갑니다. 따라잡으세요 →' : '',                                     // 빙하: 앞서 걷는 빅토르를 따라잡음
+  init(m) { m.vx = 250; },
+  tick(m) {
+    if (!read.has('ice') || read.has('peak')) return;
+    if (m.vx < 330) m.vx += 0.5;
+    if (dist(me.x, m.vx) < 16) say('peak', '괴물');
+  },
+  draw(m) { if (read.has('ice')) npc(VICTOR[m.vx < 330 && !read.has('peak') ? walk() : 0], m.vx, read.has('peak') ? -1 : 1); },
+};
+CREATURE[5].mech = {
+  hint: () => read.has('ship') ? '빅토르가 썰매로 쫓아옵니다. 붙잡히기 전에 뗏목까지 가세요 →' : '',                                     // 북극: 썰매로 쫓아오는 빅토르보다 먼저 뗏목까지
+  init(m) { m.sx = -90; },
+  tick(m) {
+    if (!read.has('ship')) return;
+    m.sx += 0.78; if (m.sx + 30 >= me.x) fail('붙잡혔다');
+  },
+  draw(m) { if (read.has('ship') && m.sx > -70) sled(m.sx, VICTOR[0]); },
+};
+
+// 빅토르의 길
+VROUTE[0].mech = {
+  hint: m => !read.has('bed') ? '' : !m.gone ? '내가 만든 괴물이 쫓아옵니다. 멈추지 말고 안뜰로 도망가세요 →' : '',                                       // 침실·안뜰: 커튼을 들친 괴물에게서 달아남
+  init(m) { m.cx = 0; },
+  tick(m) {
+    if (!read.has('bed') || m.gone) return;
+    if (!m.cx) m.cx = Math.max(30, me.x - 40);
+    m.cx += 0.7; if (dist(m.cx, me.x) < 10) return fail('붙잡혔다');
+    if (me.x > 262 && !read.has('yard')) say('yard', '빅토르', () => { m.gone = 1; });
+  },
+  draw(m) { if (m.cx && !m.gone) npc(ME[walk()], m.cx, 1); },
+};
+VROUTE[1].mech = {
+  hint: m => read.has('lake') && !read.has('tree') ? `번개가 칠 때만 형체가 보입니다. 나무 가까이에서 지켜보세요 (${m.seen}/3)` : '',                                       // 폭풍우: 번개 칠 때만 보이는 형체를 세 번 봄
+  init(m) { m.seen = 0; m.pos = [258, 310, 372]; },
+  tick(m) {
+    if (!read.has('lake') || read.has('tree')) return;
+    if (flash && !m.was && dist(me.x, m.pos[m.seen]) < 80) { if (++m.seen >= 3) say('tree', '빅토르'); }
+    m.was = flash;
+  },
+  draw(m) {
+    if (read.has('lake') && !read.has('tree') && flash) npc(ME[0], m.pos[Math.min(2, m.seen)] + 4, -1, flash / 12);
+    if (read.has('lake') && !read.has('tree')) for (let i = 0; i < 3; i++) R(ctx, cam + 6 + i * 6, 25, 4, 2, i < m.seen ? '#ece6d6' : '#ece6d633');
+  },
+};
+VROUTE[2].mech = {
+  hint: () => read.has('ice') && !read.has('mate') ? '괴물이 빙하 위로 다가옵니다. 움직일 수 없습니다' : '',                                       // 빙하: 괴물이 엄청난 속도로 다가옴
+  init(m) { m.cx = 440; },
+  tick(m) {
+    if (!read.has('ice') || read.has('mate')) return;
+    m.lock = true; m.cx -= 1.7; if (m.cx - me.x < 18) { m.lock = false; say('mate', '괴물'); }
+  },
+  draw(m) { if (read.has('ice')) npc(ME[read.has('mate') ? 0 : walk()], m.cx, -1); },
+};
+VROUTE[3].mech = {
+  hint: () => '',                                       // 오크니: 만들던 것을 찢자 창밖의 눈
+  init(m) { m.k = 0; },
+  tick(m) { if (read.has('work') && !read.has('window') && ++m.k > 50) say('window', '괴물'); },
+  draw(m) {
+    if (!read.has('work')) { R(ctx, 112, 90, 40, 6, '#76866f'); R(ctx, 114, 88, 6, 3, '#26222b'); }
+    else { [[104, 114], [126, 115], [150, 113], [172, 114]].forEach(([x, y]) => R(ctx, x, y, 7, 3, '#76866f')); }
+    if (read.has('work') && !read.has('window') || (read.has('window') && (t % 300) < 120)) {
+      R(ctx, 229, 72, 12, 12, '#a3b19a'); R(ctx, 231, 75, 3, 2, '#f1d54a'); R(ctx, 236, 75, 3, 2, '#f1d54a'); R(ctx, 229, 70, 12, 3, '#26222b');
+    }
+  },
+};
+VROUTE[4].mech = {
+  hint: m => !read.has('sled') ? '썰매에 올라타세요' : '괴물이 달아납니다. → 를 꾹 눌러 쫓으세요. 너무 멀어지면 놓칩니다',                                       // 북극: 썰매로 괴물을 쫓아 배까지
+  init(m) { m.cx = 240; },
+  tick(m) {
+    if (!read.has('sled')) return;
+    m.ride = m.hideMe = 1; m.speed = 1.05;
+    m.cx = Math.min(440, m.cx + 0.8 + 0.3 * Math.sin(t / 40));
+    if (m.cx - me.x > 170) return fail('놓쳤다');
+    if (me.x > 300 && !read.has('deck')) say('deck', '월턴', () => { ending = 4; raftX = 0; });
+  },
+  draw(m) {
+    if (m.ride) sled(me.x - 8, VICTOR[0]); else R(ctx, 64, 110, 26, 3, '#5a4030'), R(ctx, 62, 113, 30, 2, '#3a2d22');
+    if (m.cx < 420) npc(ME[walk()], m.cx, 1);
+  },
+};
+let route = 'creature', sel = 0;
+
+// ───────── 상태 ─────────
+let scene = -1, me = { x: 30, dir: 1, step: 0 }, cam = 0, t = 0, read = new Set(), people = [];
+let box = null, raftX = 0, ending = 0, keys = {}, bgCache = null, drops = [];
+const S = () => ROUTES[route][scene];
+
+function enter(i) {
+  M = {}; failT = 0; scene = i; me.x = 24; me.dir = 1; cam = 0; read = new Set(); raftX = 0;
+  const s = S(); bgCache = document.createElement('canvas'); bgCache.width = s.w; bgCache.height = H; s.bg(bgCache.getContext('2d'), s.w);
+  farCache = null;
+  if (s.far) { farCache = document.createElement('canvas'); farCache.width = Math.ceil(256 + (s.w - 160) * PAR); farCache.height = H; s.far(farCache.getContext('2d'), farCache.width); }
+  people = (s.people || []).map(x => ({ x, run: 0, gone: false }));
+  drops = Array.from({ length: s.fx === 'rain' || s.fx === 'storm' ? 60 : s.fx === 'snow' ? 50 : 0 }, () => ({ x: Math.random() * W, y: Math.random() * H }));
+  title = 30;                                            // 장면 이름 잠깐
+  s.mech && s.mech.init(M);
+}
+let title = 0, flash = 0;
+
+// ───────── 처음: 만들어지는 장면 (원문 4장) ─────────
+let intro = null;                                        // { b: 장면 번호, t: 그 장면 안 시간 }
+function startIntro() {
+  intro = { b: 0, t: 0 }; route = sel ? 'victor' : 'creature';
+  bgCache = document.createElement('canvas'); bgCache.width = CREATURE[0].w; bgCache.height = H; CREATURE[0].bg(bgCache.getContext('2d'), CREATURE[0].w);
+  drops = Array.from({ length: 60 }, () => ({ x: Math.random() * W, y: Math.random() * H }));
+  nextBeat();
+}
+function nextBeat() {
+  if (intro.b >= Q.make.length) {                        // 다 봤으면 일어선 자리에서 게임 시작
+    intro = null; enter(0); me.x = route === 'creature' ? 96 : 24; title = 60; return;
+  }
+  intro.t = 0;
+  openBox([Q.make[intro.b]], '빅토르', () => { intro.b++; nextBeat(); });
+}
+function drawIntro() {
+  const b = intro.b, k = intro.t;
+  ctx.drawImage(bgCache, 0, 0);
+  // 장치: 불꽃을 넣는 동안 코일이 달아오름
+  R(ctx, 118, 70, 14, 48, '#2a2630'); R(ctx, 120, 72, 10, 4, '#4a4552');
+  const hot = b === 1 ? 0.5 + 0.5 * Math.sin(k / 3) : 0;
+  for (let i = 0; i < 5; i++) R(ctx, 121, 80 + i * 6, 8, 2, hot ? `rgba(242,165,65,${0.4 + hot * 0.6})` : '#57505f');
+  // 촛불: 점점 줄어 꺼져 감
+  const left = [10, 9, 6, 2, 1, 1][b];
+  R(ctx, 70, 92 - left, 4, left, '#ece6d6');
+  if (b < 5 || k % 30 < 15) R(ctx, 71, 88 - left + ((k >> 3) % 2), 2, 4, '#f2a541');
+  // 몸: 작업대 위에 누움 → 마지막에 일어나 내려옴
+  const body = sprite(b >= 3 ? ME[0] : SLEEP);
+  let shake = b === 4 ? (k % 4 < 2 ? 1 : -1) : 0, rise = b === 5 ? Math.min(1, Math.max(0, (k - 90) / 60)) : 0;
+  ctx.save();
+  if (rise < 1) {
+    ctx.translate(30 + body.height / 2, 92 - body.width / 2 + shake * 0.5);
+    ctx.rotate(-Math.PI / 2 * (1 - rise) - (b === 4 ? shake * 0.03 : 0));
+    ctx.drawImage(body, -body.width / 2, -body.height / 2);
+  } else {
+    const step = Math.min(1, (k - 150) / 40);
+    ctx.translate(Math.round(46 + step * 50), Math.round(70 + step * (FLOOR - 92)));
+    ctx.drawImage(body, 0, 0);
+  }
+  ctx.restore();
+  if (b === 3 && k > 40) {                               // 흐릿한 노란 눈 (어둠 속에서 크게)
+    ctx.fillStyle = `rgba(0,0,0,${Math.min(0.55, (k - 40) / 120)})`; ctx.fillRect(0, 0, W, H);
+    const a = Math.min(1, (k - 60) / 60); ctx.globalAlpha = a;
+    R(ctx, 104, 52, 14, 5, '#f1d54a'); R(ctx, 138, 52, 14, 5, '#f1d54a'); R(ctx, 109, 53, 4, 3, '#141218'); R(ctx, 143, 53, 4, 3, '#141218');
+    ctx.globalAlpha = 1;
+  }
+  // 불꽃: 몸 위로 튀는 빛
+  if (b === 1) for (let i = 0; i < 6; i++) if ((k + i * 7) % 20 < 3) R(ctx, 30 + (i * 37 + k * 3) % 50, 80 + (i * 13) % 10, 1 + i % 2, 1 + i % 2, i % 2 ? '#ffe08a' : '#ece6d6');
+  if (b === 1 && k % 70 < 3) { ctx.fillStyle = 'rgba(236,230,214,.35)'; ctx.fillRect(0, 0, W, H); }
+  // 빅토르: 일하다가 → 뛰쳐나감
+  const v = sprite(VICTOR[b === 1 ? (k >> 3) % 2 : b === 5 ? (k >> 2) % 2 : 0]);
+  const vx = b === 5 ? 100 + k * 1.4 : 100;
+  if (vx < W + 10) { ctx.save(); ctx.translate(Math.round(vx), FLOOR - v.height); if (b !== 5) { ctx.scale(-1, 1); ctx.translate(-v.width, 0); } ctx.drawImage(v, 0, 0); ctx.restore(); }
+  rain(CREATURE[0].rainIn, 0);
+  if (b === 0 && k < 60) { ctx.fillStyle = `rgba(11,10,13,${1 - k / 60})`; ctx.fillRect(0, 0, W, H); }
+}
+
+// 아래 상자: 원문 한 문장씩
+const boxEl = document.getElementById('box'), sayEl = document.getElementById('say'), whoEl = document.getElementById('who');
+function openBox(lines, who, after) { box = { lines, i: 0, ch: 0, who, after }; boxEl.classList.add('on'); whoEl.textContent = who; }
+function stepBox() {
+  const l = box.lines[box.i];
+  if (box.ch < l.length) { box.ch = l.length; return; }                // 다 안 나왔으면 한 번에
+  if (++box.i < box.lines.length) { box.ch = 0; return; }
+  const after = box.after; box = null; boxEl.classList.remove('on'); after && after();
+}
+
+// 엔딩 크레딧: 원문 전부가 올라감 (→ 꾹 = 빨리, 스페이스·누르기 = 건너뛰기)
+const credEl = document.getElementById('credits'), rollEl = document.getElementById('roll');
+let rollY = 0;
+function startCredits() {
+  ending = 5; rollY = innerHeight;
+  if (!rollEl.dataset.ready) {
+    rollEl.innerHTML = `<h2>프랑켄슈타인</h2><p class="sub">메리 셸리 · 김선형 옮김</p><p></p><p class="fin">끝</p>`;
+    const N = window.NOVEL || '', i = N.indexOf('제1권편지 1');      // 헌사·일러두기·차례 빼고 본문부터
+    rollEl.children[2].textContent = N.slice(i < 0 ? 0 : i).replace('제1권편지 1', '제1권 · 편지 1 — ');
+    rollEl.dataset.ready = 1;
+  }
+  credEl.classList.add('on');
+}
+function creditsTick() {
+  if (ending !== 5) return;
+  rollY -= keys.right ? 18 : 1.6;
+  rollEl.style.transform = `translate(-50%, ${rollY}px)`;
+  if (rollY < -rollEl.offsetHeight) endCredits();
+}
+function endCredits() { credEl.classList.remove('on'); ending = 3; }
+
+function act() {
+  if (ending === 5) { endCredits(); return; }
+  if (landing) { startGame(); return; }
+  if (howto) { howto = false; return; }
+  if (scene < 0 && !intro) { startIntro(); return; }
+  if (ending >= 3) { ending = 0; scene = -1; box = null; boxEl.classList.remove('on'); return; }
+  if (box) { stepBox(); return; }
+  if (ending) return;
+  const th = near(); if (!th) return;
+  openBox(Q[th.q], th.who, () => {
+    read.add(th.q);
+    if (th.q === 'raft') ending = 1;                    // 뗏목에 오르면 떠내려감
+  });
+}
+const near = () => S().things.find(th => !th.auto && Math.abs(th.x - (me.x + 6)) < 14);
+
+// ───────── 입력 ─────────
+addEventListener('keydown', e => {
+  const k = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right' }[e.key];
+  if (k) keys[k] = true;
+  if (landing) { if (k) return; }
+  if (howto && k) { howto = false; return; }
+  if (k && scene < 0 && !intro) sel = k === 'left' ? 0 : 1;
+  if ([' ', 'Enter', 'ArrowUp', 'e', 'E', 'z', 'Z'].includes(e.key)) { e.preventDefault(); act(); }
+});
+addEventListener('keyup', e => { const k = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right' }[e.key]; if (k) keys[k] = false; });
+document.querySelectorAll('.pad button').forEach(b => {
+  const k = b.dataset.k;
+  b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); k === 'act' ? act() : (keys[k] = true); if (k !== 'act' && scene < 0 && !intro) sel = k === 'left' ? 0 : 1; });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => { if (k !== 'act') keys[k] = false; }));
+});
+cv.addEventListener('pointerdown', e => {               // 제목: 왼쪽 반 = 괴물, 오른쪽 반 = 빅토르
+  if (scene < 0 && !intro) { const r = cv.getBoundingClientRect(), y = (e.clientY - r.top) / r.height * H;
+    if (W < 200) { if (y > 100) sel = y < 121 ? 0 : 1; } else if (y > 100 && y < 124) { sel = (e.clientX - r.left) / r.width < 0.5 ? 0 : 1; } }
+  act();
+});
+boxEl.addEventListener('pointerdown', act);
+
+// ───────── 한 프레임 ─────────
+function update() {
+  t++;
+  if (intro) { intro.t++; drops.forEach(d => { d.y += 4; d.x -= 1; if (d.y > H) { d.y = -4; d.x = Math.random() * W; } if (d.x < 0) d.x += W; }); return; }
+  if (scene < 0) return;
+  const s = S();
+  if (title) title--;
+  if (failT) { if (--failT === 0) enter(scene); return; }
+  if (ending === 1) {                                    // 괴물이 뗏목으로 걸어감
+    me.dir = 1; if (me.x < 306) { me.x += 0.6; me.step++; } else ending = 2;
+  } else if (ending === 2) {                             // 어둠 속으로
+    raftX += 0.35; me.x = 306 + raftX;
+    if (raftX > 120 && !box) { openBox(Q.end, '월턴', startCredits); }
+  } else if (ending === 4) {                             // 어두워지고 월턴의 말
+    raftX += 1; if (raftX > 140 && !box) openBox(Q.vend, '월턴', startCredits);
+  } else if (!box) {
+    const v = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+    if (v && !M.lock) { me.dir = v; me.x += v * (M.speed || 0.9); me.step++; }
+    s.mech && s.mech.tick(M);
+    if (failT || box) return;
+    const done = s.things.every(th => read.has(th.q)) && (!s.mech || !s.mech.done || s.mech.done(M)), max = s.last ? (route === 'creature' ? 290 : 340) : (done ? s.w : s.w - 18);
+    me.x = Math.max(4, Math.min(max, me.x));
+    if (me.x >= s.w - 4 && done && !s.last) enter(scene + 1);
+  }
+  people.forEach(p => {                                  // 다가가면 비명 지르며 달아남
+    if (!p.run && Math.abs(p.x - me.x) < 46) p.run = me.x < p.x ? 1 : -1;
+    if (p.run) { p.x += p.run * 1.6; if (p.x < -20 || p.x > s.w + 20) p.gone = true; }
+  });
+  const target = Math.max(0, Math.min(s.w - W, me.x - W / 2 + (ending === 2 ? 30 : 0)));
+  cam += (target - cam) * 0.12;
+  if (s.fx === 'storm') { if (flash) flash--; else if (Math.random() < 0.006) flash = 12; }
+  drops.forEach(d => { if (s.fx === 'rain' || s.fx === 'storm') { d.y += 4; d.x -= 1; } else { d.y += 0.4; d.x += Math.sin((t + d.y) * 0.03) * 0.3; }
+    if (d.y > H) { d.y = -4; d.x = Math.random() * W; } if (d.x < 0) d.x += W; });
+}
+
+function draw() {
+  ctx.fillStyle = '#0b0a0d'; ctx.fillRect(0, 0, W, H);
+  if (landing) return drawCover();
+  if (howto) return drawHow();
+  if (intro) return drawIntro();
+  if (scene < 0) return drawTitle();
+  const s = S(), cx = Math.round(cam);
+  if (farCache) ctx.drawImage(farCache, -Math.round(cam * PAR), 0);
+  ctx.drawImage(bgCache, -cx, 0);
+  ctx.save(); ctx.translate(-cx, 0);
+  s.things.forEach(th => {
+    th.draw && th.draw(ctx, t);
+    if (th.light) { ctx.fillStyle = 'rgba(242,165,65,.06)'; ctx.beginPath(); ctx.arc(th.x, 100, 34 + Math.sin(t / 9) * 2, 0, 7); ctx.fill(); }
+    if (!th.auto && !read.has(th.q) && !box && !ending) {            // 아직 안 읽은 곳: 깜빡이는 표시
+      // 누를 수 있는 곳: 바닥에 퍼지는 빛 + 통통 튀는 노란 마름모. 가까이 가면 키 말풍선
+      const n = near() === th, bob = Math.round(Math.abs(Math.sin(t / 10)) * -4), y = 66 + bob;
+      ctx.fillStyle = `rgba(241,213,74,${0.10 + 0.06 * Math.sin(t / 12)})`; ctx.beginPath(); ctx.ellipse(th.x, FLOOR, 16, 4, 0, 0, 7); ctx.fill();
+      [[0, -3, 1], [-1, -2, 3], [-2, -1, 5], [-3, 0, 7], [-2, 1, 5], [-1, 2, 3], [0, 3, 1]].forEach(([dx, dy, w]) => R(ctx, th.x + dx, y + dy, w, 1, '#f1d54a'));
+      if ((t >> 3) % 6 === 0) { R(ctx, th.x - 9, y + 2, 1, 1, '#fff8c8'); R(ctx, th.x + 8, y - 4, 1, 1, '#fff8c8'); }
+      if (n) {
+        const label = K('스페이스'); ctx.font = '12px Galmuri'; const w = ctx.measureText(label).width + 10, bx = Math.round(th.x - w / 2), by = y - 26;
+        R(ctx, bx, by, w, 16, '#f1d54a'); R(ctx, bx + 1, by + 1, w - 2, 14, '#0b0a0d'); R(ctx, th.x - 2, by + 16, 5, 1, '#f1d54a'); R(ctx, th.x - 1, by + 17, 3, 1, '#f1d54a'); R(ctx, th.x, by + 18, 1, 1, '#f1d54a');
+        ctx.fillStyle = '#f1d54a'; ctx.textAlign = 'center'; ctx.fillText(label, th.x, by + 12); ctx.textAlign = 'left';
+      }
+    }
+  });
+  people.forEach(p => { if (!p.gone) { const sp = sprite(VILLAGER[p.run ? (t >> 3) % 2 : 0]);
+    ctx.save(); ctx.translate(Math.round(p.x), FLOOR - sp.height); if (p.run === 1) { ctx.scale(-1, 1); ctx.translate(-sp.width, 0); }
+    ctx.drawImage(sp, 0, 0); ctx.restore();
+    if (p.run && Math.abs(p.x - me.x) < 90) { ctx.fillStyle = '#ece6d6'; ctx.font = '12px Galmuri'; ctx.fillText('!', p.x + 3, FLOOR - 18); } } });
+  s.mech && s.mech.draw(M);
+  if (!M.hideMe) {
+  const sp = sprite((route === 'victor' ? VICTOR : ME)[(me.step >> 4) % 2]), mx = Math.round(me.x), my = FLOOR - sp.height + (ending === 2 ? -2 : 0);
+  ctx.save(); ctx.translate(mx, my); if (me.dir < 0) { ctx.scale(-1, 1); ctx.translate(-sp.width, 0); } ctx.globalAlpha = M.stun ? 0.5 + 0.5 * ((t >> 2) % 2) : 1; ctx.drawImage(sp, 0, 0); ctx.restore(); ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+  if (s.fx === 'rain') rain(s.rainIn, cx);
+  if (s.fx === 'snow') drops.forEach(d => R(ctx, d.x, d.y, 1, 1, '#ffffffcc'));
+  if (s.fx === 'storm') { drops.forEach(d => R(ctx, d.x, d.y, 1, 3, '#5d6a8a88')); if (flash) { ctx.fillStyle = `rgba(236,230,214,${flash / 12})`; ctx.fillRect(0, 0, W, H); } }
+  if (ending >= 2) { ctx.fillStyle = `rgba(11,10,13,${Math.min(1, raftX / 140)})`; ctx.fillRect(0, 0, W, H); }
+  // 위: 장면 이름 + 읽은 곳
+  if (!ending) {
+    ctx.font = '12px Galmuri'; ctx.fillStyle = '#ece6d6'; ctx.globalAlpha = title ? 1 : 0.55;
+    if (W < 200 && s.name.includes(' · ')) { const [a, b] = s.name.split(' · '); ctx.fillText(a, 6, 14); ctx.fillText(b, 6, 28); }   // 좁으면 두 줄
+    else ctx.fillText(s.name, 6, 14);
+    s.things.forEach((th, i) => R(ctx, 6 + i * 6, W < 200 && s.name.includes(' · ') ? 33 : 19, 4, 4, read.has(th.q) ? '#f1d54a' : '#ece6d644'));
+    ctx.globalAlpha = 1;
+    if (s.things.every(th => read.has(th.q)) && (!s.mech || !s.mech.done || s.mech.done(M)) && !s.last && !box) {
+      // 다 읽었으면: 오른쪽 가운데에 크게 「다음 장소 →」 (오른쪽 끝까지 걸어가면 넘어감)
+      const bob = Math.round(Math.sin(t / 8) * 2), ax = W - 22 + bob, ay = H / 2 - 2;
+      R(ctx, W - 74, ay - 22, 70, 46, 'rgba(11,10,13,.55)');
+      ctx.globalAlpha = 1; ctx.fillStyle = '#f1d54a'; ctx.textAlign = 'right'; ctx.fillText('다음 장소', W - 10, ay - 8); ctx.textAlign = 'left';
+      R(ctx, ax - 24, ay + 4, 18, 3, '#f1d54a');
+      for (let i = 0; i < 7; i++) R(ctx, ax - 6 + i, ay - 1 + i, 1, 13 - i * 2, '#f1d54a');
+    }
+  }
+  if (failT) { ctx.fillStyle = 'rgba(11,10,13,.7)'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#ece6d6'; ctx.font = '12px Galmuri'; ctx.textAlign = 'center';
+    ctx.fillText(failMsg, W / 2, H / 2); ctx.textAlign = 'left'; }
+  if (ending === 3) { ctx.fillStyle = '#ece6d6'; ctx.font = '12px Galmuri'; ctx.textAlign = 'center';
+    ctx.fillText('끝', W / 2, H / 2); ctx.globalAlpha = 0.5; ctx.fillText('처음으로', W / 2, H / 2 + 14); ctx.globalAlpha = 1; ctx.textAlign = 'left'; }
+}
+
+// 비: 실내 장면은 창문(·바깥) 안에서만 보임
+function rain(rects, cx) {
+  ctx.save();
+  if (rects) { ctx.beginPath(); rects.forEach(([x, y, w, h]) => ctx.rect(x - cx, y, w, h)); ctx.clip(); }
+  drops.forEach(d => R(ctx, d.x, d.y, 1, 3, '#5d6a8a88'));
+  ctx.restore();
+}
+
+// 조작법: 키 모양으로
+function key(x, y, w, label) {
+  R(ctx, x, y, w, 18, '#ece6d6'); R(ctx, x + 1, y + 1, w - 2, 15, '#0b0a0d'); R(ctx, x + 1, y + 16, w - 2, 1, '#6b665c');
+  ctx.fillStyle = '#ece6d6'; ctx.fillText(label, x + w / 2, y + 13);
+}
+function drawHow() {                                    // 위아래로 쌓음 (좁은 폰 화면에서도 들어가게)
+  ctx.textAlign = 'center'; ctx.font = '12px Galmuri'; ctx.fillStyle = '#ece6d6';
+  ctx.globalAlpha = 0.5; ctx.fillText('조작법', W / 2, 18); ctx.globalAlpha = 1;
+  const [l, r, a] = TOUCH ? ['◀', '▶', '●'] : ['←', '→', '스페이스'];
+  key(W / 2 - 24, 28, 22, l); key(W / 2 + 2, 28, 22, r);
+  ctx.fillStyle = '#ece6d6'; ctx.fillText('걷기 · 고르기', W / 2, 62);
+  const aw = TOUCH ? 22 : 64; key(W / 2 - aw / 2, 74, aw, a);
+  ctx.fillStyle = '#ece6d6'; ctx.fillText('읽기 · 다음', W / 2, 108);
+  ctx.globalAlpha = (t >> 5) % 2 ? 0.4 : 0.9; ctx.fillText(TOUCH ? '눌러서 시작' : '아무 키나 눌러 시작', W / 2, 134);
+  ctx.globalAlpha = 1; ctx.textAlign = 'left';
+}
+
+function drawCover() {                                   // 첫 화면 창 안: 문구 + 노란 눈 + 제목
+  ctx.fillStyle = '#ece6d6'; ctx.textAlign = 'center'; ctx.font = '12px Galmuri'; ctx.globalAlpha = 0.5;
+  if (W < 200) { ctx.fillText('흙으로 나를 인간으로', W / 2, 24); ctx.fillText('빚어달라고 제가 청했습니까.', W / 2, 38); ctx.fillText('창조주여.', W / 2, 52); }
+  else { ctx.fillText('흙으로 나를 인간으로 빚어달라고', W / 2, 32); ctx.fillText('제가 청했습니까. 창조주여.', W / 2, 48); }
+  ctx.globalAlpha = 1;
+  if ((t % 180) >= 6) { R(ctx, W / 2 - 14, 72, 6, 3, '#f1d54a'); R(ctx, W / 2 + 8, 72, 6, 3, '#f1d54a'); }
+  ctx.fillStyle = '#ece6d6'; ctx.font = (W < 200 ? 20 : 24) + 'px Galmuri'; ctx.fillText('프랑켄슈타인', W / 2, 108);
+  ctx.textAlign = 'left';
+}
+
+function drawTitle() {
+  ctx.fillStyle = '#ece6d6'; ctx.textAlign = 'center'; ctx.font = '12px Galmuri';
+  ctx.globalAlpha = 0.5;
+  if (W < 200) { ctx.fillText('흙으로 나를 인간으로', W / 2, 18); ctx.fillText('빚어달라고 제가 청했습니까.', W / 2, 32); ctx.fillText('창조주여.', W / 2, 46); }
+  else { ctx.fillText('흙으로 나를 인간으로 빚어달라고', W / 2, 24); ctx.fillText('제가 청했습니까. 창조주여.', W / 2, 40); }
+  ctx.globalAlpha = 1;
+  const blink = (t % 180) < 6;                           // 노란 눈이 가끔 깜빡임
+  if (!blink) { R(ctx, W / 2 - 14, 60, 6, 3, '#f1d54a'); R(ctx, W / 2 + 8, 60, 6, 3, '#f1d54a'); }
+  ctx.fillStyle = '#ece6d6'; ctx.font = (W < 200 ? 20 : 24) + 'px Galmuri'; ctx.fillText('프랑켄슈타인', W / 2, 92);
+  ctx.font = '12px Galmuri';
+  const narrow = W < 200;
+  [['괴물로 걷기', narrow ? W / 2 : W / 2 - 52, narrow ? 112 : 114], ['빅토르로 걷기', narrow ? W / 2 : W / 2 + 52, narrow ? 130 : 114]].forEach(([txt, x, y], i) => {
+    ctx.globalAlpha = sel === i ? 1 : 0.35; ctx.fillText(txt, x, y);
+    if (sel === i) R(ctx, x - ctx.measureText(txt).width / 2, y + 4, ctx.measureText(txt).width, 1, '#ece6d6');
+  });
+  ctx.globalAlpha = 1; ctx.textAlign = 'left';
+}
+
+// 글자 하나씩 (상자)
+function typeTick() {
+  if (!box) return;
+  const l = box.lines[box.i]; if (box.ch < l.length) box.ch += 0.6;
+  sayEl.textContent = l.slice(0, Math.floor(box.ch));
+}
+
+const hintEl = document.getElementById('hint');
+function hintTick() {                                    // 지금 할 일 한 줄 (상자 열렸을 땐 숨김)
+  let h = '';
+  if (ending === 5) h = '→ 꾹 누르면 빨리 · 스페이스로 건너뛰기';
+  else if (scene >= 0 && !box && !ending) { const s = S(); h = failT ? (s.mech && s.mech.hint(M)) || '' : (s.mech && s.mech.hint(M)) || ''; }
+  h = K(h);
+  if (hintEl.textContent !== h) hintEl.textContent = h;
+  hintEl.classList.toggle('on', !!h && !box);
+  hintEl.classList.toggle('low', ending === 5);       // 크레딧 안내만 아래
+}
+(function loop() { update(); draw(); typeTick(); hintTick(); creditsTick(); requestAnimationFrame(loop); })();
+// 확인용: ?scene=3
+const front = document.getElementById('front'), flow = document.getElementById('flow');
+{ const N = window.NOVEL || '', i = N.indexOf('제1권편지 1'); flow.textContent = N.slice(i < 0 ? 0 : i).replace('제1권편지 1', '제1권 · 편지 1 — '); }
+let flowY = 0, flowDrag = null;
+function flowTick() {
+  if (!landing) return;
+  if (!flowDrag) flowY -= 0.4;
+  const h = flow.offsetHeight; if (flowY < -h) flowY = innerHeight; if (flowY > innerHeight) flowY = -h + 1;
+  flow.style.transform = `translate(-50%, ${flowY}px)`;
+  requestAnimationFrame(flowTick);
+}
+front.addEventListener('pointerdown', e => { flowDrag = { y: e.clientY, at: flowY }; front.classList.add('drag'); front.setPointerCapture(e.pointerId); });
+front.addEventListener('pointermove', e => { if (flowDrag) flowY = flowDrag.at + (e.clientY - flowDrag.y); });
+['pointerup', 'pointercancel'].forEach(ev => front.addEventListener(ev, () => { flowDrag = null; front.classList.remove('drag'); }));
+front.addEventListener('wheel', e => { flowY -= e.deltaY; }, { passive: true });
+document.getElementById('start').addEventListener('click', e => { e.stopPropagation(); startGame(); });
+flowTick();
+const qs = new URLSearchParams(location.search).get('scene'); if (qs !== null) { landing = false; document.body.classList.remove('landing'); fit(); howto = false; enter(+qs); }
+const qi = new URLSearchParams(location.search).get('intro'); if (qi !== null) { landing = false; document.body.classList.remove('landing'); fit(); howto = false; startIntro(); for (let i = 0; i < +qi; i++) { box.ch = 999; stepBox(); } }
+</script>
+</body>
+</html>
