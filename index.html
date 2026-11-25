@@ -87,7 +87,7 @@ const Q = {
            '내가 창조해낸 존재의 면면을 차마 견디지 못하고 실험실에서 뛰쳐나와 오랫동안 침실을 서성였지만, 도저히 마음을 진정하고 잠을 이룰 수가 없었다.'],
   body:   ['사지는 비율을 맞추어 제작되었고, 생김생김 역시 아름다운 것으로 선택했다.', '아름다움이라니! 하느님, 맙소사!'],
   moon:   ['희미한 노란색 달빛이 억지로 창문 셔터 틈새를 비집고 들어오는 순간, 눈앞에 그 괴물이 보였다.'],
-  fire:   ['어느 날, 추위에 떨고 있던 나는 방량하던 거지들이 놓고 간 불을 발견했는데, 그로부터 열기를 느끼고는 기쁨에 사로잡혔다.',
+  fire:   ['어느 날, 추위에 떨고 있던 나는 방랑하던 거지들이 놓고 간 불을 발견했는데, 그로부터 열기를 느끼고는 기쁨에 사로잡혔다.',
            '너무 기쁜 나머지 아직 다 타지 않은 불씨에 맨손을 댔다가 고통스러운 비명을 지르며 곧 손을 떼었다.',
            '밤이 되고 잠이 오자, 불이 꺼져버릴까봐 지독하게 겁이 났다.'],
   violin: ['그러자 노인은 악기를 집어들어 연주를 하기 시작했는데, 그 소리는 개똥지빠귀나 나이팅게일의 지저귐보다 더 달콤했다.',
@@ -97,7 +97,7 @@ const Q = {
   hut:    ['그리고 나를 보더니 큰 소리로 비명을 질러대며 오두막 밖으로 뛰쳐나가 그 노쇠한 몸으로는 상상할 수 없는 속도로 벌판을 가로질러 뛰어가는 것이었다.'],
   door:   ['하지만 문간에 발을 들여놓기가 무섭게 아이들이 비명을 질렀고 한 여자가 기절했다.'],
   ice:    ['거대한 빙하가 길 쪽으로 다가왔다.',
-           '비와 습기와 추위에는 예날부터 단련된 몸이었기에 나는 혼자서 몽탕베르산 정상에 오르기로 결심했다.'],
+           '비와 습기와 추위에는 옛날부터 단련된 몸이었기에 나는 혼자서 몽탕베르산 정상에 오르기로 결심했다.'],
   peak:   ['나는 당신의 아담이 되어야 하는데 오히려 타락한 천사가 되어, 잘못도 없이 기쁨을 박탈당하고 당신에게서 쫓겨났다.',
            '나는 자애롭고 선했다.', '불행이 나를 악마로 만들었다.'],
   ship:   ['저는 아무리 애를 써도 북극이 서리로 뒤덮인 황량한 오지라는 사실이 믿기지 않아요.'],
@@ -171,85 +171,37 @@ function fit() {                                         // 정수 배율로 꽉
 addEventListener('resize', fit); fit();
 
 const R = (g, x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x | 0, y | 0, w | 0, h | 0); };
-function ridge(g, w, base, amp, seed, c) {               // 산·언덕: 열마다 높이
-  g.fillStyle = c;
-  for (let x = 0; x < w; x++) {
-    const y = base - amp * (0.5 + 0.3 * Math.sin(x * 0.031 + seed) + 0.2 * Math.sin(x * 0.087 + seed * 2));
-    g.fillRect(x, y | 0, 1, H);
-  }
-}
-function stars(g, w, n, c, seed) { for (let i = 0; i < n; i++) R(g, (Math.sin(i * 91 + seed) * 0.5 + 0.5) * w, (Math.sin(i * 37 + seed) * 0.5 + 0.5) * 70, 1, 1, c); }
 
 // ───────── 장면 여섯 ─────────
 // things: x = 바닥 기준 가운데, q = 원문 키
 const CREATURE = [
   { name: '잉골슈타트 · 꼭대기 층 작업실', w: 320, fx: 'rain', rainIn: [[162, 32, 36, 42]],
-    bg(g, w) {
-      R(g, 0, 0, w, H, '#1a1824'); R(g, 0, FLOOR, w, H, '#2b2531');
-      for (let x = 0; x < w; x += 16) R(g, x, FLOOR, 1, H, '#231e29');
-      for (let x = 8; x < w; x += 40) R(g, x, 20, 2, FLOOR - 20, '#211e2b');         // 벽 기둥
-      R(g, 160, 30, 40, 46, '#0f0e16'); R(g, 162, 32, 36, 42, '#2b3550'); R(g, 179, 32, 2, 42, '#0f0e16'); R(g, 162, 52, 36, 2, '#0f0e16');
-      R(g, 186, 38, 6, 6, '#e8dca0');                                                 // 달
-      R(g, 20, 92, 70, 6, '#4a3a2c'); R(g, 24, 98, 4, 20, '#3a2d22'); R(g, 82, 98, 4, 20, '#3a2d22');   // 작업대
-      R(g, 280, 54, 26, 64, '#3a2d22'); R(g, 282, 56, 22, 62, '#2a2019'); R(g, 300, 86, 2, 3, '#b8a070'); // 문
-    },
     things: [
       { x: 74, q: 'body', who: '빅토르', draw(g, t) { R(g, 70, 84, 4, 8, '#ece6d6'); R(g, 71, 80 + (t % 20 < 10), 2, 4, '#f2a541'); } },
       { x: 180, q: 'moon', who: '빅토르', auto: true },
     ] },
   { name: '숲', w: 400, fx: 'night',
-    bg(g, w) {
-      R(g, 0, 0, w, H, '#141c22'); stars(g, w, 50, '#6b7b86', 1);
-      ridge(g, w, 96, 30, 1, '#1a2a26'); ridge(g, w, 112, 20, 4, '#1f3229');
-      for (let x = 10; x < w; x += 23) { const h = 30 + (x * 7 % 25); for (let i = 0; i < h; i++) R(g, x - i / 3, FLOOR - h + i, (i / 3) * 2 + 3, 1, '#16241e'); R(g, x, FLOOR - 6, 3, 6, '#2a2019'); }
-      R(g, 0, FLOOR, w, H, '#22261d');
-    },
     things: [
       { x: 210, q: 'fire', who: '괴물', light: true,
         draw(g, t) { R(g, 202, 114, 16, 3, '#3a2d22'); const f = (t >> 3) % 3;
           R(g, 205, 104 + f, 10, 10 - f, '#b5533d'); R(g, 207, 100 + f, 6, 12 - f, '#f2a541'); R(g, 209, 104, 2, 8, '#ffe08a'); } },
     ] },
   { name: '드 라세 가족의 오두막', w: 400, fx: 'night',
-    bg(g, w) {
-      R(g, 0, 0, w, H, '#1b1b26'); stars(g, w, 40, '#7c7c96', 2); ridge(g, w, 100, 24, 2, '#1f2433');
-      R(g, 0, FLOOR, w, H, '#26281f');
-      R(g, 110, 66, 110, 52, '#4a3a2c'); for (let i = 0; i < 30; i++) R(g, 104 + i, 66 - i, 122 - i * 2, 1, '#3a2b20');   // 오두막·지붕
-      R(g, 140, 80, 22, 18, '#f2c26b'); R(g, 150, 80, 2, 18, '#4a3a2c'); R(g, 140, 88, 22, 2, '#4a3a2c');                   // 창
-      R(g, 186, 86, 18, 32, '#2a2019');                                                                                       // 문
-      R(g, 250, 92, 46, 26, '#3a2d22'); for (let i = 0; i < 14; i++) R(g, 248 + i, 92 - i, 50 - i * 2, 1, '#2f241b');        // 헛간
-    },
     things: [
       { x: 151, q: 'violin', who: '괴물', light: true },
       { x: 330, q: 'books', who: '괴물', draw(g) { R(g, 322, 110, 16, 8, '#5a4030'); R(g, 324, 108, 12, 2, '#7a5a40'); } },
     ] },
   { name: '마을', w: 420, fx: 'day', people: [150, 330],   // 달아나는 사람 (돌 던지는 사람은 mech)
-    bg(g, w) {
-      R(g, 0, 0, w, H, '#7d8794'); R(g, 0, 0, w, 30, '#6c7684'); ridge(g, w, 100, 18, 5, '#69735f');
-      R(g, 0, FLOOR, w, H, '#5d5a4c');
-      [[60, 34], [190, 40], [320, 36]].forEach(([x, hh]) => { R(g, x, FLOOR - hh, 56, hh, '#b8ad96'); for (let i = 0; i < 18; i++) R(g, x - 4 + i, FLOOR - hh - i, 64 - i * 2, 1, '#7a4a3a');
-        R(g, x + 22, FLOOR - 22, 12, 22, '#4a3a2c'); R(g, x + 6, FLOOR - hh + 8, 10, 8, '#3c4654'); R(g, x + 40, FLOOR - hh + 8, 10, 8, '#3c4654'); });
-    },
     things: [
       { x: 88, q: 'hut', who: '괴물' },
       { x: 218, q: 'door', who: '괴물' },
     ] },
   { name: '몽탕베르 · 메르드글라스 빙하', w: 420, fx: 'snow',
-    bg(g, w) {
-      R(g, 0, 0, w, H, '#9aa7b4'); ridge(g, w, 70, 50, 3, '#d9e1e8'); ridge(g, w, 90, 34, 7, '#b9c6d2'); ridge(g, w, 108, 16, 9, '#a3b3c2');
-      R(g, 0, FLOOR, w, H, '#e8eef2'); for (let x = 0; x < w; x += 9) R(g, x, FLOOR + 2 + (x % 5), 5, 1, '#c8d3dc');
-      R(g, 300, 96, 40, 22, '#6d6f78'); R(g, 306, 92, 26, 6, '#7d808a');                                                     // 바위
-    },
     things: [
       { x: 140, q: 'ice', who: '빅토르' },
       { x: 320, q: 'peak', who: '괴물', auto: true },
     ] },
   { name: '북극', w: 380, fx: 'snow', last: true,
-    bg(g, w) {
-      R(g, 0, 0, w, H, '#0e1118'); stars(g, w, 60, '#9fb0c8', 6);
-      R(g, 0, 104, w, H, '#0a0d14'); R(g, 0, FLOOR, 300, H, '#cfd8e2');
-      for (let x = 0; x < 300; x += 13) R(g, x, FLOOR + 3 + (x % 7), 7, 1, '#aab6c4');
-      R(g, 40, 86, 70, 14, '#2a2019'); R(g, 70, 46, 2, 40, '#2a2019'); R(g, 72, 50, 22, 24, '#9aa3ad');                       // 배
-    },
     things: [
       { x: 75, q: 'ship', who: '월턴' },
       { x: 300, q: 'raft', who: '괴물', draw(g) { R(g, 300 + raftX, 116, 30, 4, '#e8eef2'); R(g, 300 + raftX, 120, 30, 2, '#8fa0b2'); } },
@@ -259,51 +211,26 @@ const CREATURE = [
 // 빅토르의 길
 const VROUTE = [
   { name: '잉골슈타트 · 침실과 안뜰', w: 340, fx: 'rain', rainIn: [[62, 32, 32, 36], [200, 0, 140, H]],
-    bg(g, w) {
-      R(g, 0, 0, w, H, '#1a1824'); R(g, 0, FLOOR, w, H, '#2b2531');
-      R(g, 60, 30, 36, 40, '#0f0e16'); R(g, 62, 32, 32, 36, '#2b3550'); R(g, 77, 32, 2, 36, '#0f0e16'); R(g, 84, 38, 6, 6, '#e8dca0');
-      R(g, 100, 92, 60, 10, '#5a4030'); R(g, 100, 86, 14, 6, '#ece6d6'); R(g, 98, 50, 3, 68, '#3a2d22'); R(g, 101, 52, 18, 40, '#5b2f2f');   // 침대·커튼
-      R(g, 200, 0, 140, H, '#151a1c'); R(g, 200, FLOOR, 140, H, '#2a2e2a'); R(g, 200, 40, 4, 78, '#3a3f3a');                                 // 안뜰
-      for (let x = 210; x < w; x += 18) R(g, x, 60, 2, 58, '#232826');
-    },
     things: [
       { x: 110, q: 'bed', who: '빅토르', auto: true },
       { x: 270, q: 'yard', who: '빅토르', auto: true },
     ] },
   { name: '제네바 근교 · 폭풍우', w: 420, fx: 'storm',
-    bg(g, w) {
-      R(g, 0, 0, w, H, '#151621'); ridge(g, w, 80, 34, 2, '#1c1f2c');
-      R(g, 0, 96, w, 22, '#20283a'); for (let x = 0; x < w; x += 7) R(g, x, 100 + (x % 11), 4, 1, '#2c364c');                                  // 호수
-      R(g, 0, FLOOR, w, H, '#1e211c');
-      [250, 300, 360].forEach(x => { R(g, x, 74, 6, 44, '#2a2019'); for (let i = 0; i < 22; i++) R(g, x - 12 + i / 2, 52 + i, 30 - i, 1, '#17221b'); });
-    },
     things: [
       { x: 120, q: 'lake', who: '빅토르' },
       { x: 300, q: 'tree', who: '빅토르', auto: true },
     ] },
-  { name: '몽탕베르 · 메르드글라스 빙하', w: 420, fx: 'snow', bg: (g, w) => CREATURE[4].bg(g, w),
+  { name: '몽탕베르 · 메르드글라스 빙하', w: 420, fx: 'snow',
     things: [
       { x: 140, q: 'ice', who: '빅토르' },
       { x: 320, q: 'mate', who: '괴물', auto: true },
     ] },
   { name: '오크니 · 외딴 작업장', w: 360, fx: 'night',
-    bg(g, w) {
-      R(g, 0, 0, w, H, '#11151c'); stars(g, w, 30, '#5b6a80', 9); R(g, 0, 90, w, 28, '#16202c');
-      R(g, 60, 50, 240, 68, '#2a2630'); for (let i = 0; i < 20; i++) R(g, 56 + i, 50 - i, 248 - i * 2, 1, '#221f28');
-      R(g, 0, FLOOR, w, H, '#2b2531');
-      R(g, 220, 66, 30, 22, '#0f0e16'); R(g, 222, 68, 26, 18, '#2b3550');                                                                        // 창
-      R(g, 100, 96, 70, 6, '#4a3a2c'); R(g, 104, 102, 4, 16, '#3a2d22'); R(g, 162, 102, 4, 16, '#3a2d22');                                       // 작업대
-    },
     things: [
       { x: 135, q: 'work', who: '빅토르' },
       { x: 235, q: 'window', who: '괴물', auto: true },
     ] },
   { name: '북극 · 썰매', w: 560, fx: 'snow', last: true,
-    bg(g, w) {
-      R(g, 0, 0, w, H, '#0e1118'); stars(g, w, 60, '#9fb0c8', 6); R(g, 0, FLOOR, w, H, '#cfd8e2');
-      for (let x = 0; x < w; x += 13) R(g, x, FLOOR + 3 + (x % 7), 7, 1, '#aab6c4');
-      R(g, 300, 86, 80, 14, '#2a2019'); R(g, 336, 46, 2, 40, '#2a2019'); R(g, 338, 50, 22, 24, '#9aa3ad');                                      // 월턴의 배
-    },
     things: [
       { x: 80, q: 'sled', who: '빅토르' },
       { x: 500, q: 'deck', who: '월턴', auto: true },
@@ -373,10 +300,10 @@ CREATURE[1].mech = {
   done: m => m.fed >= 3,
 };
 CREATURE[2].mech = {
-  hint: () => '펠릭스가 등불을 들고 오갑니다. 등불 앞에 서면 들킵니다. 등을 돌렸을 때 지나가세요',                                     // 오두막: 펠릭스의 등불에 들키지 않게
-  init(m) { m.fx = 240; m.d = -1; },
+  hint: () => !read.has('violin') ? '헛간에 숨어 지냅니다. 펠릭스가 등을 돌렸을 때 창가로 다가가세요 · 등불 앞에 서면 들킵니다' : '',                                     // 오두막: 펠릭스의 등불에 들키지 않게
+  init(m) { m.fx = 196; m.d = -1; me.x = 300; me.dir = -1; cam = Math.max(0, Math.min(400 - W, 300 - W / 2)); },   // 헛간(250~296) 옆에서 시작
   tick(m) {
-    m.fx += m.d * 0.45; if (m.fx < 112) m.d = 1; if (m.fx > 262) m.d = -1;
+    m.fx += m.d * 0.45; if (m.fx < 92) m.d = 1; if (m.fx > 200) m.d = -1;            // 장작더미 ↔ 문 사이만 오감
     if (dist(me.x + 6, m.fx + 5) < 36 && Math.sign(me.x + 6 - (m.fx + 5)) === m.d) fail('들켰다');
   },
   draw(m) {
@@ -614,6 +541,7 @@ function act() {
   if (scene < 0 && !intro) { startIntro(); return; }
   if (ending >= 3) { ending = 0; scene = -1; box = null; boxEl.classList.remove('on'); return; }
   if (box) { stepBox(); return; }
+  if (failT) return;                                     // 실패 화면 중엔 읽기 X
   if (ending) return;
   const th = near(); if (!th) return;
   openBox(Q[th.q], th.who, () => {
@@ -632,6 +560,12 @@ addEventListener('keydown', e => {
   if (k && scene < 0 && !intro) sel = k === 'left' ? 0 : 1;
   if ([' ', 'Enter', 'ArrowUp', 'e', 'E', 'z', 'Z'].includes(e.key)) { e.preventDefault(); act(); }
 });
+addEventListener('blur', () => { keys = {}; });
+addEventListener('keydown', e => {                      // Esc: 게임 중 언제든 시점 고르는 화면으로
+  if (e.key !== 'Escape' || landing || howto || scene < 0 && !intro) return;
+  intro = null; scene = -1; ending = 0; box = null; failT = 0; keys = {};
+  boxEl.classList.remove('on'); credEl.classList.remove('on');
+});          // 창을 벗어나면 눌린 키 풀기
 addEventListener('keyup', e => { const k = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right' }[e.key]; if (k) keys[k] = false; });
 document.querySelectorAll('.pad button').forEach(b => {
   const k = b.dataset.k;
@@ -675,7 +609,7 @@ function update() {
   });
   const target = Math.max(0, Math.min(s.w - W, me.x - W / 2 + (ending === 2 ? 30 : 0)));
   cam += (target - cam) * 0.12;
-  if (s.fx === 'storm') { if (flash) flash--; else if (Math.random() < 0.006) flash = 12; }
+  if (s.fx === 'storm') { if (flash) flash--; else if (Math.random() < (M.seen !== undefined && read.has('lake') ? 0.014 : 0.006)) flash = 12; }   // 형체를 찾는 동안 번개 자주
   drops.forEach(d => { if (s.fx === 'rain' || s.fx === 'storm') { d.y += 4; d.x -= 1; } else { d.y += 0.4; d.x += Math.sin((t + d.y) * 0.03) * 0.3; }
     if (d.y > H) { d.y = -4; d.x = Math.random() * W; } if (d.x < 0) d.x += W; });
 }
