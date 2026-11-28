@@ -13,10 +13,10 @@
   canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
   /* 아래 상자: 원문 */
   /* 아래 대화창: 게임 화면 밑에 따로 자리 잡은 칸 */
-  #wrap { display: grid; grid-template-rows: auto auto; width: var(--cw); background: #07060a; }
+  #wrap { width: var(--cw); background: #07060a; }
   /* 대화창: 짙은 녹회색 판 + 얇은 테두리 하나 (장식 없이) */
   /* 대화창: 직접 그린 쇠 테두리(dialog.png)를 9조각으로 늘림. 도트 배율(--px)만큼 키움 */
-  #box { position: relative; box-sizing: border-box; min-height: var(--bh); margin: calc(var(--bh) * .08) 2% calc(var(--bh) * .06);
+  #box { position: absolute; left: 2%; right: 2%; bottom: calc(var(--bh) * .06); box-sizing: border-box; min-height: calc(var(--bh) * .88);   /* 바닥 위에 얹힘, 길면 위로 늘어남 */
     border-style: solid; border-color: transparent;
     border-width: calc(13px * var(--bp)) calc(18px * var(--bp)) calc(18px * var(--bp)) calc(12px * var(--bp));   /* --bp = 도트 배율 × 0.7 */
     border-image: url(dialog.png) 13 18 18 12 fill stretch; image-rendering: pixelated;
@@ -69,7 +69,7 @@
 <div id="stage">
 <div id="wrap">
   <div id="bar"><span>프랑켄슈타인</span><i>■□×</i></div>
-  <canvas id="c" width="256" height="144"></canvas>
+  <canvas id="c" width="256" height="202"></canvas>
   <img id="logo" src="title.png" alt="프랑켄슈타인">
   <div id="hint"></div>
   <div id="box"><div class="who" id="who"></div><div id="say"></div><span class="more">▼</span></div>
@@ -162,17 +162,18 @@ function sprite(map) {                                   // 글자 그림 → �
 }
 
 // ───────── 화면 ─────────
-let W = 256; const H = 144, FLOOR = 118;            // 폰 세로면 W = 160 (보이는 폭을 좁혀 크게)
+let W = 256; const H = 144, FLOOR = 118, EXT = 58, HH = H + EXT;   // HH: 대화창 자리까지 바닥이 이어지는 전체 높이            // 폰 세로면 W = 160 (보이는 폭을 좁혀 크게)
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 function fit() {                                         // 정수 배율로 꽉 차게
   W = innerWidth < innerHeight ? 160 : 256; if (cv.width !== W) cv.width = W;
   const land = document.body.classList.contains('landing');
-  const BOX = 0.4;                                       // 대화창 칸 높이 = 게임 화면 높이 × 0.4
-  const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : Math.min(innerWidth / W, innerHeight / (H * (1 + BOX)));
+  const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : Math.min(innerWidth / W, innerHeight / HH);
   const s = f >= 2 ? Math.floor(f) : f;   // 크면 정수 배율, 폰 세로는 꽉 차게
-  cv.style.width = W * s + 'px'; cv.style.height = H * s + 'px';
+  cv.style.width = W * s + 'px'; cv.style.height = HH * s + 'px';
   const wr = document.getElementById('wrap'); wr.style.setProperty('--ch', H * s + 'px'); wr.style.setProperty('--cw', W * s + 'px'); wr.style.setProperty('--px', s); wr.style.setProperty('--bp', Math.max(1, Math.round(s * 0.7 * 2) / 2));
-  wr.style.setProperty('--lw', Math.min(W * s * 0.82, H * s * 0.42 * 320 / 150) + 'px');   // 타이틀: 창 폭 82% 또는 높이 42% 중 작은 쪽 wr.style.setProperty('--bh', H * s * BOX * 0.82 + 'px');
+  wr.style.setProperty('--lw', Math.min(W * s * 0.82, H * s * 0.42 * 320 / 150) + 'px');   // 타이틀: 창 폭 82% 또는 높이 42% 중 작은 쪽
+  wr.style.setProperty('--bh', EXT * s + 'px');
+  wr.style.height = land ? H * s + 'px' : '';  wr.style.overflow = land ? 'hidden' : '';   // 첫 화면 창은 게임 화면 높이까지만
   document.getElementById('wrap').style.setProperty('--fs', Math.max(13, s * 5.2) + 'px');
 }
 addEventListener('resize', fit); fit();
@@ -421,8 +422,8 @@ VROUTE[4].mech = {                                       // 북극: 썰매로 �
   draw(m) {
     if (read.has('crack')) {                             // 갈라진 바다
       const x0 = m.crackX;
-      R(ctx, x0, FLOOR, 600, H - FLOOR, '#0a1220'); for (let x = x0; x < x0 + 600; x += 9) R(ctx, x + (t >> 3) % 5, FLOOR + 4 + (x % 13), 5, 1, '#1e3048');
-      for (let y = FLOOR; y < H; y += 2) R(ctx, x0 - 2 + ((y * 7) % 3), y, 2, 2, '#8fa0b2');
+      R(ctx, x0, FLOOR, 600, HH - FLOOR, '#0a1220'); for (let x = x0; x < x0 + 600; x += 9) R(ctx, x + (t >> 3) % 5, FLOOR + 4 + (x % 13), 5, 1, '#1e3048');
+      for (let y = FLOOR; y < HH; y += 2) R(ctx, x0 - 2 + ((y * 7) % 3), y, 2, 2, '#8fa0b2');
       R(ctx, me.x - 6, FLOOR - 1, 26, 4, '#cdd8e4'); R(ctx, me.x - 6, FLOOR + 3, 26, 2, '#8fa0b2');   // 유빙
       npc(VICTOR[(me.step >> 4) % 2], me.x, 1, 1, FLOOR - 1);
     } else if (m.ride) sled(me.x - 8, VICTOR[0]);
@@ -441,13 +442,20 @@ let scene = -1, me = { x: 30, dir: 1, step: 0 }, cam = 0, t = 0, read = new Set(
 let box = null, raftX = 0, ending = 0, keys = {}, bgCache = null, drops = [];
 const S = () => ROUTES[route][scene];
 
+function makeBg(s) {                                    // 장면 배경 + 바닥을 대화창 자리(H~HH)까지 이어 깔기
+  const c = document.createElement('canvas'); c.width = s.w; c.height = HH; const g = c.getContext('2d');
+  s.bg(g, s.w);
+  const band = H - FLOOR - 4;
+  for (let y = H; y < HH; y += band) g.drawImage(c, 0, FLOOR + 4, s.w, band, 0, y, s.w, band);
+  return c;
+}
 function enter(i) {
   M = {}; failT = 0; scene = i; me.x = 24; me.dir = 1; cam = 0; read = new Set(); raftX = 0;
-  const s = S(); bgCache = document.createElement('canvas'); bgCache.width = s.w; bgCache.height = H; s.bg(bgCache.getContext('2d'), s.w);
+  const s = S(); bgCache = makeBg(s);
   farCache = null;
   if (s.far) { farCache = document.createElement('canvas'); farCache.width = Math.ceil(256 + (s.w - 160) * PAR); farCache.height = H; s.far(farCache.getContext('2d'), farCache.width); }
   people = (s.people || []).map(x => ({ x, run: 0, gone: false }));
-  drops = Array.from({ length: s.fx === 'rain' || s.fx === 'storm' ? 60 : s.fx === 'snow' ? 50 : 0 }, () => ({ x: Math.random() * W, y: Math.random() * H }));
+  drops = Array.from({ length: s.fx === 'rain' || s.fx === 'storm' ? 60 : s.fx === 'snow' ? 50 : 0 }, () => ({ x: Math.random() * W, y: Math.random() * HH }));
   title = 30;                                            // 장면 이름 잠깐
   s.mech && s.mech.init(M);
 }
@@ -457,8 +465,8 @@ let title = 0, flash = 0;
 let intro = null;                                        // { b: 장면 번호, t: 그 장면 안 시간 }
 function startIntro() {
   intro = { b: 0, t: 0 }; route = sel ? 'victor' : 'creature';
-  bgCache = document.createElement('canvas'); bgCache.width = CREATURE[0].w; bgCache.height = H; CREATURE[0].bg(bgCache.getContext('2d'), CREATURE[0].w);
-  drops = Array.from({ length: 60 }, () => ({ x: Math.random() * W, y: Math.random() * H }));
+  bgCache = makeBg(CREATURE[0]);
+  drops = Array.from({ length: 60 }, () => ({ x: Math.random() * W, y: Math.random() * HH }));
   nextBeat();
 }
 function nextBeat() {
@@ -494,20 +502,20 @@ function drawIntro() {
   }
   ctx.restore();
   if (b === 3 && k > 40) {                               // 흐릿한 노란 눈 (어둠 속에서 크게)
-    ctx.fillStyle = `rgba(0,0,0,${Math.min(0.55, (k - 40) / 120)})`; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = `rgba(0,0,0,${Math.min(0.55, (k - 40) / 120)})`; ctx.fillRect(0, 0, W, HH);
     const a = Math.min(1, (k - 60) / 60); ctx.globalAlpha = a;
     R(ctx, 104, 52, 14, 5, '#f1d54a'); R(ctx, 138, 52, 14, 5, '#f1d54a'); R(ctx, 109, 53, 4, 3, '#141218'); R(ctx, 143, 53, 4, 3, '#141218');
     ctx.globalAlpha = 1;
   }
   // 불꽃: 몸 위로 튀는 빛
   if (b === 1) for (let i = 0; i < 6; i++) if ((k + i * 7) % 20 < 3) R(ctx, 30 + (i * 37 + k * 3) % 50, 80 + (i * 13) % 10, 1 + i % 2, 1 + i % 2, i % 2 ? '#ffe08a' : '#ece6d6');
-  if (b === 1 && k % 70 < 3) { ctx.fillStyle = 'rgba(236,230,214,.35)'; ctx.fillRect(0, 0, W, H); }
+  if (b === 1 && k % 70 < 3) { ctx.fillStyle = 'rgba(236,230,214,.35)'; ctx.fillRect(0, 0, W, HH); }
   // 빅토르: 일하다가 → 뛰쳐나감
   const v = sprite(VICTOR[b === 1 ? (k >> 3) % 2 : b === 5 ? (k >> 2) % 2 : 0]);
   const vx = b === 5 ? 100 + k * 1.4 : 100;
   if (vx < W + 10) { ctx.save(); ctx.translate(Math.round(vx), FLOOR - v.height); if (b !== 5) { ctx.scale(-1, 1); ctx.translate(-v.width, 0); } ctx.drawImage(v, 0, 0); ctx.restore(); }
   rain(CREATURE[0].rainIn, 0);
-  if (b === 0 && k < 60) { ctx.fillStyle = `rgba(11,10,13,${1 - k / 60})`; ctx.fillRect(0, 0, W, H); }
+  if (b === 0 && k < 60) { ctx.fillStyle = `rgba(11,10,13,${1 - k / 60})`; ctx.fillRect(0, 0, W, HH); }
 }
 
 // 아래 상자: 원문 한 문장씩
@@ -589,7 +597,7 @@ boxEl.addEventListener('pointerdown', act);
 // ───────── 한 프레임 ─────────
 function update() {
   t++;
-  if (intro) { intro.t++; drops.forEach(d => { d.y += 4; d.x -= 1; if (d.y > H) { d.y = -4; d.x = Math.random() * W; } if (d.x < 0) d.x += W; }); return; }
+  if (intro) { intro.t++; drops.forEach(d => { d.y += 4; d.x -= 1; if (d.y > HH) { d.y = -4; d.x = Math.random() * W; } if (d.x < 0) d.x += W; }); return; }
   if (scene < 0) return;
   const s = S();
   if (title) title--;
@@ -618,11 +626,11 @@ function update() {
   cam += (target - cam) * 0.12;
   if (s.fx === 'storm') { if (flash) flash--; else if (Math.random() < (M.seen !== undefined && read.has('lake') ? 0.014 : 0.006)) flash = 12; }   // 형체를 찾는 동안 번개 자주
   drops.forEach(d => { if (s.fx === 'rain' || s.fx === 'storm') { d.y += 4; d.x -= 1; } else { d.y += 0.4; d.x += Math.sin((t + d.y) * 0.03) * 0.3; }
-    if (d.y > H) { d.y = -4; d.x = Math.random() * W; } if (d.x < 0) d.x += W; });
+    if (d.y > HH) { d.y = -4; d.x = Math.random() * W; } if (d.x < 0) d.x += W; });
 }
 
 function draw() {
-  ctx.fillStyle = '#0b0a0d'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0b0a0d'; ctx.fillRect(0, 0, W, HH);
   if (landing) return drawCover();
   if (howto) return drawHow();
   if (intro) return drawIntro();
@@ -659,8 +667,8 @@ function draw() {
   ctx.restore();
   if (s.fx === 'rain') rain(s.rainIn, cx);
   if (s.fx === 'snow') drops.forEach(d => R(ctx, d.x, d.y, 1, 1, '#ffffffcc'));
-  if (s.fx === 'storm') { drops.forEach(d => R(ctx, d.x, d.y, 1, 3, '#5d6a8a88')); if (flash) { ctx.fillStyle = `rgba(236,230,214,${flash / 12})`; ctx.fillRect(0, 0, W, H); } }
-  if (ending >= 2) { ctx.fillStyle = `rgba(11,10,13,${Math.min(1, raftX / 140)})`; ctx.fillRect(0, 0, W, H); }
+  if (s.fx === 'storm') { drops.forEach(d => R(ctx, d.x, d.y, 1, 3, '#5d6a8a88')); if (flash) { ctx.fillStyle = `rgba(236,230,214,${flash / 12})`; ctx.fillRect(0, 0, W, HH); } }
+  if (ending >= 2) { ctx.fillStyle = `rgba(11,10,13,${Math.min(1, raftX / 140)})`; ctx.fillRect(0, 0, W, HH); }
   // 위: 장면 이름 + 읽은 곳
   if (!ending) {
     ctx.font = '12px Galmuri'; ctx.fillStyle = '#ece6d6'; ctx.globalAlpha = title ? 1 : 0.55;
@@ -677,7 +685,7 @@ function draw() {
       for (let i = 0; i < 7; i++) R(ctx, ax - 6 + i, ay - 1 + i, 1, 13 - i * 2, '#f1d54a');
     }
   }
-  if (failT) { ctx.fillStyle = 'rgba(11,10,13,.7)'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#ece6d6'; ctx.font = '12px Galmuri'; ctx.textAlign = 'center';
+  if (failT) { ctx.fillStyle = 'rgba(11,10,13,.7)'; ctx.fillRect(0, 0, W, HH); ctx.fillStyle = '#ece6d6'; ctx.font = '12px Galmuri'; ctx.textAlign = 'center';
     ctx.fillText(failMsg, W / 2, H / 2); ctx.textAlign = 'left'; }
   if (ending === 3) { ctx.fillStyle = '#ece6d6'; ctx.font = '12px Galmuri'; ctx.textAlign = 'center';
     ctx.fillText('끝', W / 2, H / 2); ctx.globalAlpha = 0.5; ctx.fillText('처음으로', W / 2, H / 2 + 14); ctx.globalAlpha = 1; ctx.textAlign = 'left'; }
