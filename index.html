@@ -225,7 +225,7 @@ const CREATURE = [
   { name: '드 라세 가족의 오두막', w: 400, fx: 'night',
     things: [
       { x: 151, q: 'violin', who: '괴물', light: true },
-      { x: 330, q: 'books', who: '괴물', draw(g) { R(g, 322, 110, 16, 8, '#5a4030'); R(g, 324, 108, 12, 2, '#7a5a40'); } },
+      { x: 52, q: 'books', who: '괴물', draw(g) { R(g, 44, 110, 16, 8, '#5a4030'); R(g, 46, 108, 12, 2, '#7a5a40'); } },
     ] },
   { name: '마을', w: 420, fx: 'day', people: [150, 330],   // 달아나는 사람 (돌 던지는 사람은 mech)
     things: [
@@ -339,17 +339,23 @@ CREATURE[1].mech = {
   },
   done: m => m.fed >= 3,
 };
-CREATURE[2].mech = {
-  hint: () => !read.has('violin') ? '헛간에 숨어 지냅니다. 펠릭스가 등을 돌렸을 때 창가로 다가가세요 · 등불 앞에 서면 들킵니다' : '',                                     // 오두막: 펠릭스의 등불에 들키지 않게
-  init(m) { m.fx = 196; m.d = -1; me.x = 300; me.dir = -1; cam = Math.max(0, Math.min(400 - W, 300 - W / 2)); },   // 헛간(250~296) 옆에서 시작
+CREATURE[2].mech = {                                     // 오두막: 헛간(왼쪽)에서 시작. 펠릭스는 문 ↔ 장작더미를 오가다 가끔 안에 들어감
+  hint: m => !(read.has('violin') && read.has('books')) ? '헛간에 숨어 지냅니다. 펠릭스의 등불 앞에 서면 들킵니다. 등을 돌렸을 때 창가로 다가가세요'
+    : '펠릭스가 오두막 안에 들어갔을 때 오른쪽으로 빠져나가세요 →',
+  init(m) { m.fx = 215; m.d = 1; m.st = 'out'; m.k = 0; },   // 처음엔 장작더미 쪽으로 걸어가는 중(등이 괴물 쪽)
   tick(m) {
-    m.fx += m.d * 0.45; if (m.fx < 92) m.d = 1; if (m.fx > 200) m.d = -1;            // 장작더미 ↔ 문 사이만 오감
-    if (dist(me.x + 6, m.fx + 5) < 36 && Math.sign(me.x + 6 - (m.fx + 5)) === m.d) fail('들켰다');
+    const DOOR = 192, PILE = 290;
+    if (m.st === 'out') { m.fx += 0.45; if (m.fx >= PILE) { m.st = 'pile'; m.k = 90; } }
+    else if (m.st === 'pile') { if (--m.k <= 0) { m.st = 'back'; m.d = -1; } }
+    else if (m.st === 'back') { m.fx -= 0.45; if (m.fx <= DOOR) { m.st = 'in'; m.k = 170; } }
+    else if (m.st === 'in') { if (--m.k <= 0) { m.st = 'out'; m.d = 1; } }
+    if (m.st !== 'in' && dist(me.x + 6, m.fx + 5) < 46 && Math.sign(me.x + 6 - (m.fx + 5)) === m.d) fail('들켰다');
   },
   draw(m) {
+    if (m.st === 'in') return;                           // 오두막 안
     ctx.fillStyle = 'rgba(242,194,107,.12)'; ctx.beginPath(); const ox = m.fx + 5 + m.d * 4;
-    ctx.moveTo(ox, 100); ctx.lineTo(ox + m.d * 36, 86); ctx.lineTo(ox + m.d * 36, FLOOR); ctx.lineTo(ox, FLOOR); ctx.fill();
-    npc(FELIX[walk()], m.fx, m.d); R(ctx, m.fx + (m.d > 0 ? 10 : -2), 104, 2, 3, '#f2c26b');
+    ctx.moveTo(ox, 100); ctx.lineTo(ox + m.d * 46, 84); ctx.lineTo(ox + m.d * 46, FLOOR); ctx.lineTo(ox, FLOOR); ctx.fill();
+    npc(FELIX[m.st === 'pile' ? 0 : walk()], m.fx, m.d); R(ctx, m.fx + (m.d > 0 ? 10 : -2), 104, 2, 3, '#f2c26b');
   },
 };
 CREATURE[3].mech = {
@@ -477,8 +483,8 @@ const S = () => ROUTES[route][scene];
 function makeBg(s) {                                    // 장면 배경 + 바닥을 대화창 자리(H~HH)까지 이어 깔기
   const c = document.createElement('canvas'); c.width = s.w; c.height = HH; const g = c.getContext('2d');
   s.bg(g, s.w);
-  const band = H - FLOOR - 4;
-  for (let y = H; y < HH; y += band) g.drawImage(c, 0, FLOOR + 4, s.w, band, 0, y, s.w, band);
+  const band = 12;                                       // 바닥 맨 아래 12줄만 반복 (창 불빛·그림자가 섞이지 않게)
+  for (let y = H; y < HH; y += band) g.drawImage(c, 0, H - band, s.w, band, 0, y, s.w, band);
   return c;
 }
 function enter(i) {

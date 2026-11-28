@@ -171,13 +171,13 @@ const ART = {
       for (let y = BG_FLOOR; y < BG_FLOOR + 14; y++) for (let x = 130 + (y - BG_FLOOR); x < 172 - (y - BG_FLOOR) + 20; x++) if (BAYER[(y & 3) * 4 + (x & 3)] < 4) px(g, x, y, 1, 1, '#4a4226');
       planks(g, 186, 86, 18, 32, '#2a2019', '#1c150f', '#3a2d22', true, 38); px(g, 200, 102, 2, 2, '#b8a070');
       // 장작더미 · 울타리
-      for (let j = 0; j < 3; j++) for (let i = 0; i < 4 - j; i++) { px(g, 88 + i * 5 + j * 2, BG_FLOOR - 5 - j * 4, 5, 4, '#6a4a30'); px(g, 89 + i * 5 + j * 2, BG_FLOOR - 4 - j * 4, 2, 2, '#a07a50'); }
-      for (let x = 0; x < 80; x += 8) { px(g, x, BG_FLOOR - 12, 2, 12, '#4a3a2c'); } px(g, 0, BG_FLOOR - 9, 80, 1, '#4a3a2c'); px(g, 0, BG_FLOOR - 5, 80, 1, '#4a3a2c');
+      for (let j = 0; j < 3; j++) for (let i = 0; i < 4 - j; i++) { px(g, 296 + i * 5 + j * 2, BG_FLOOR - 5 - j * 4, 5, 4, '#6a4a30'); px(g, 297 + i * 5 + j * 2, BG_FLOOR - 4 - j * 4, 2, 2, '#a07a50'); }   // 장작더미: 오른쪽
+      for (let x = 336; x < w; x += 8) { px(g, x, BG_FLOOR - 12, 2, 12, '#4a3a2c'); } px(g, 336, BG_FLOOR - 9, w - 336, 1, '#4a3a2c'); px(g, 336, BG_FLOOR - 5, w - 336, 1, '#4a3a2c');
       // 헛간 (괴물이 숨어 지낸 곳): 틈 사이로 어둠
-      planks(g, 250, 92, 46, 26, '#3a2d22', '#20180f', '#4a3a2c', true, 39); for (let x = 254; x < 296; x += 6) px(g, x, 96, 1, 18, '#0e0b08');
-      for (let i = 0; i < 14; i++) px(g, 247 + i, 92 - i, 52 - i * 2, 1, i % 2 ? '#4a3a22' : '#3a2d1c');
+      planks(g, 14, 92, 52, 26, '#3a2d22', '#20180f', '#4a3a2c', true, 39); for (let x = 18; x < 66; x += 6) px(g, x, 96, 1, 18, '#0e0b08');   // 헛간: 왼쪽 (괴물이 여기서 시작)
+      for (let i = 0; i < 14; i++) px(g, 11 + i, 92 - i, 58 - i * 2, 1, i % 2 ? '#4a3a22' : '#3a2d1c');
       // 밭고랑
-      for (let x = 340; x < w; x += 6) { px(g, x, BG_FLOOR + 4, 4, 1, '#3a3020'); px(g, x + 1, BG_FLOOR + 3, 1, 1, '#4e6a34'); }
+      for (let x = 232; x < 286; x += 6) { px(g, x, BG_FLOOR + 4, 4, 1, '#3a3020'); px(g, x + 1, BG_FLOOR + 3, 1, 1, '#4e6a34'); }
     },
   },
   // 4. 마을 (흐린 낮)
