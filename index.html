@@ -599,8 +599,8 @@ document.querySelectorAll('.pad button').forEach(b => {
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => { if (k !== 'act') keys[k] = false; }));
 });
 cv.addEventListener('pointerdown', e => {               // 제목: 왼쪽 반 = 괴물, 오른쪽 반 = 빅토르
-  if (scene < 0 && !intro) { const r = cv.getBoundingClientRect(), y = (e.clientY - r.top) / r.height * H;
-    if (W < 200) { if (y > 100) sel = y < 121 ? 0 : 1; } else if (y > 100 && y < 124) { sel = (e.clientX - r.left) / r.width < 0.5 ? 0 : 1; } }
+  if (scene < 0 && !intro) { const r = cv.getBoundingClientRect(), y = (e.clientY - r.top) / r.height * HH;
+    const cy = HH / 2; if (W < 200) { if (Math.abs(y - cy) < 30) sel = y < cy + 5 ? 0 : 1; } else if (Math.abs(y - cy) < 16) { sel = (e.clientX - r.left) / r.width < 0.5 ? 0 : 1; } }
   act();
 });
 boxEl.addEventListener('pointerdown', act);
@@ -642,7 +642,7 @@ function update() {
 
 function draw() {
   ctx.fillStyle = '#0b0a0d'; ctx.fillRect(0, 0, W, HH);
-  if (howto) return drawHow();
+  if (howto) { ctx.save(); ctx.translate(0, (HH - H) / 2); drawHow(); ctx.restore(); return; }   // 조작법도 세로 가운데
   if (intro) return drawIntro();
   if (scene < 0) return drawTitle();
   const s = S(), cx = Math.round(cam);
@@ -727,15 +727,10 @@ function drawHow() {                                    // 위아래로 쌓음 (
 }
 
 
-function drawTitle() {
+function drawTitle() {                                   // 시점 고르기: 두 선택지만 화면 가운데
   ctx.fillStyle = '#ece6d6'; ctx.textAlign = 'center'; ctx.font = '12px Galmuri';
-  ctx.globalAlpha = 0.5;
-  if (W < 200) { ctx.fillText('흙으로 나를 인간으로', W / 2, 18); ctx.fillText('빚어달라고 제가 청했습니까.', W / 2, 32); ctx.fillText('창조주여.', W / 2, 46); }
-  else { ctx.fillText('흙으로 나를 인간으로 빚어달라고', W / 2, 24); ctx.fillText('제가 청했습니까. 창조주여.', W / 2, 40); }
-  ctx.globalAlpha = 1;
-  ctx.font = '12px Galmuri';
-  const narrow = W < 200;
-  [['괴물로 걷기', narrow ? W / 2 : W / 2 - 52, narrow ? 112 : 114], ['빅토르로 걷기', narrow ? W / 2 : W / 2 + 52, narrow ? 130 : 114]].forEach(([txt, x, y], i) => {
+  const narrow = W < 200, cy = HH / 2;
+  [['괴물로 걷기', narrow ? W / 2 : W / 2 - 52, narrow ? cy - 6 : cy + 4], ['빅토르로 걷기', narrow ? W / 2 : W / 2 + 52, narrow ? cy + 16 : cy + 4]].forEach(([txt, x, y], i) => {
     ctx.globalAlpha = sel === i ? 1 : 0.35; ctx.fillText(txt, x, y);
     if (sel === i) R(ctx, x - ctx.measureText(txt).width / 2, y + 4, ctx.measureText(txt).width, 1, '#ece6d6');
   });
@@ -752,8 +747,7 @@ function typeTick() {
 const hintEl = document.getElementById('hint');
 const logoEl = document.getElementById('logo');
 function logoTick() {                                    // 타이틀: 첫 화면 창 / 시점 고르는 화면에서만
-  logoEl.classList.toggle('on', !landing && !howto && scene < 0 && !intro);   // 시점 고르는 화면
-  logoEl.style.top = 'calc(var(--ch) * .52)';
+  logoEl.classList.toggle('on', false);
 }
 function hintTick() {                                    // 지금 할 일 한 줄 (상자 열렸을 땐 숨김)
   let h = '';
