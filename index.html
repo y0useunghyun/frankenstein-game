@@ -70,10 +70,10 @@
   #app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
   body.rot #app { inset: auto; top: 0; left: 0; width: var(--ah); height: var(--aw); transform-origin: 0 0; transform: translateX(var(--aw)) rotate(90deg); }
   /* 손가락 버튼 (폰) */
-  .pad { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); display: none; gap: 12px; }
-  .pad button { width: 64px; height: 64px; border: 3px solid #ece6d6; background: #0b0a0daa; color: #ece6d6; font: 22px Galmuri, monospace; }
+  .pad { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); display: none; gap: 8px; }
+  .pad button { width: 52px; height: 52px; border: 3px solid #ece6d6; background: #0b0a0daa; color: #ece6d6; font: 22px Galmuri, monospace; }
   .pad button:active { background: #ece6d6; color: #0b0a0d; }
-  #padL { left: 16px; } #padR { right: 16px; }
+  #padL { left: 12px; } #padR { right: 12px; }
   @media (pointer: coarse) { .pad { display: flex; } }
 </style>
 </head>
@@ -186,7 +186,8 @@ function fit() {                                         // 정수 배율로 꽉
   document.body.classList.toggle('rot', rot);
   document.body.style.setProperty('--aw', innerWidth + 'px'); document.body.style.setProperty('--ah', innerHeight + 'px');
   const AW = rot ? innerHeight : innerWidth, AH = rot ? innerWidth : innerHeight;
-  const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : Math.min(AW / W, AH / HH);
+  const padW = !land && matchMedia('(pointer: coarse)').matches ? 2 * 132 : 0;   // 폰: 양옆에 ◀ ▶ / ● 자리를 비워 둠 (버튼이 대화창과 안 겹치게)
+  const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : Math.min((AW - padW) / W, AH / HH);
   const s = f >= 2 ? Math.floor(f) : f;   // 크면 정수 배율, 폰 세로는 꽉 차게
   cv.style.width = W * s + 'px'; cv.style.height = HH * s + 'px';
   const wr = document.getElementById('wrap'); wr.style.setProperty('--ch', H * s + 'px'); wr.style.setProperty('--cw', W * s + 'px'); wr.style.setProperty('--px', s); wr.style.setProperty('--bp', Math.max(1, Math.round(s * 0.7 * 2) / 2));
