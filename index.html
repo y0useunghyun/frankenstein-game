@@ -351,12 +351,12 @@ CREATURE[2].mech = {                                     // 오두막: 헛간(�
     const DOOR = 192, PILE = 290;
     if (m.st === 'out') { m.fx += 0.45; if (m.fx >= PILE) { m.st = 'pile'; m.k = 90; } }
     else if (m.st === 'pile') { if (--m.k <= 0) { m.st = 'back'; m.d = -1; } }
-    else if (m.st === 'back') { m.fx -= 0.45; if (m.fx <= DOOR) { m.st = 'in'; m.k = 170; } }
+    else if (m.st === 'back') { m.fx -= 0.45; if (m.fx <= DOOR) { m.st = 'in'; m.k = 360; } }   // 안에 6초쯤 머묾 (지나갈 틈 넉넉히)
     else if (m.st === 'in') { if (--m.k <= 0) { m.st = 'out'; m.d = 1; } }
     if (m.st !== 'in' && dist(me.x + 6, m.fx + 5) < 46 && Math.sign(me.x + 6 - (m.fx + 5)) === m.d) fail('들켰다');
   },
   draw(m) {
-    if (m.st === 'in') return;                           // 오두막 안
+    if (m.st === 'in') { if (m.k < 70 && (t >> 3) % 2) R(ctx, 196, 88, 2, 30, '#f2c26b'); return; }   // 오두막 안 · 곧 나오면 문틈이 깜빡
     ctx.fillStyle = 'rgba(242,194,107,.12)'; ctx.beginPath(); const ox = m.fx + 5 + m.d * 4;
     ctx.moveTo(ox, 100); ctx.lineTo(ox + m.d * 46, 84); ctx.lineTo(ox + m.d * 46, FLOOR); ctx.lineTo(ox, FLOOR); ctx.fill();
     npc(FELIX[m.st === 'pile' ? 0 : walk()], m.fx, m.d); R(ctx, m.fx + (m.d > 0 ? 10 : -2), 104, 2, 3, '#f2c26b');
