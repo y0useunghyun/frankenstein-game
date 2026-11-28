@@ -47,10 +47,10 @@
   #flow { position: absolute; left: 50%; top: 0; width: min(880px, 90vw); transform: translateX(-50%); will-change: transform;
     font-size: 15px; line-height: 1.9; color: #ece6d6; opacity: .3; word-break: keep-all; }
   #stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 22px; }
-  #bar { display: none; height: 26px; padding: 0 10px; background: #ece6d6; color: #0b0a0d; font-size: 13px; align-items: center; justify-content: space-between; }
-  #bar i { font-style: normal; letter-spacing: 3px; }
-  body.landing #bar { display: flex; }
-  body.landing #wrap { border: 3px solid #ece6d6; background: #0b0a0d; box-shadow: 0 24px 70px #000c; }
+  /* 첫 화면: 창 없이 타이틀만 크게 + 아래 버튼 */
+  body.landing #wrap { display: none; }
+  #cover { display: none; width: var(--cvw); image-rendering: pixelated; cursor: pointer; filter: drop-shadow(0 10px 30px #000); }
+  body.landing #cover { display: block; }
   #start { display: none; font: 18px Galmuri, monospace; color: #0b0a0d; background: #f1d54a; border: 0; padding: 12px 28px;
     box-shadow: 0 4px 0 #9a8420, 0 0 0 3px #0b0a0d; cursor: pointer; }
   #start:active { transform: translateY(3px); box-shadow: 0 1px 0 #9a8420, 0 0 0 3px #0b0a0d; }
@@ -68,12 +68,12 @@
 <div id="front"><div id="flow"></div></div>
 <div id="stage">
 <div id="wrap">
-  <div id="bar"><span>프랑켄슈타인</span><i>■□×</i></div>
   <canvas id="c" width="256" height="202"></canvas>
   <img id="logo" src="title.png" alt="프랑켄슈타인">
   <div id="hint"></div>
   <div id="box"><div class="who" id="who"></div><div id="say"></div><span class="more">▼</span></div>
 </div>
+<img id="cover" src="title.png" alt="프랑켄슈타인">
 <button id="start">게임 시작하기</button>
 </div>
 <div id="credits"><div id="roll"></div></div>
@@ -173,7 +173,8 @@ function fit() {                                         // 정수 배율로 꽉
   const wr = document.getElementById('wrap'); wr.style.setProperty('--ch', H * s + 'px'); wr.style.setProperty('--cw', W * s + 'px'); wr.style.setProperty('--px', s); wr.style.setProperty('--bp', Math.max(1, Math.round(s * 0.7 * 2) / 2));
   wr.style.setProperty('--lw', Math.min(W * s * 0.82, H * s * 0.42 * 320 / 150) + 'px');   // 타이틀: 창 폭 82% 또는 높이 42% 중 작은 쪽
   wr.style.setProperty('--bh', EXT * s + 'px');
-  wr.style.height = land ? H * s + 'px' : '';  wr.style.overflow = land ? 'hidden' : '';   // 첫 화면 창은 게임 화면 높이까지만
+  const cv0 = Math.min(innerWidth * 0.9, (innerHeight - 170) * 320 / 150);                    // 첫 화면 타이틀: 가능한 크게, 정수 배율이면 맞춤
+  document.body.style.setProperty('--cvw', (cv0 >= 320 ? Math.floor(cv0 / 320) * 320 : cv0) + 'px');
   document.getElementById('wrap').style.setProperty('--fs', Math.max(13, s * 5.2) + 'px');
 }
 addEventListener('resize', fit); fit();
@@ -631,7 +632,6 @@ function update() {
 
 function draw() {
   ctx.fillStyle = '#0b0a0d'; ctx.fillRect(0, 0, W, HH);
-  if (landing) return drawCover();
   if (howto) return drawHow();
   if (intro) return drawIntro();
   if (scene < 0) return drawTitle();
@@ -716,13 +716,6 @@ function drawHow() {                                    // 위아래로 쌓음 (
   ctx.globalAlpha = 1; ctx.textAlign = 'left';
 }
 
-function drawCover() {                                   // 첫 화면 창 안: 문구 + 노란 눈 + 제목
-  ctx.fillStyle = '#ece6d6'; ctx.textAlign = 'center'; ctx.font = '12px Galmuri'; ctx.globalAlpha = 0.5;
-  if (W < 200) { ctx.fillText('흙으로 나를 인간으로', W / 2, 24); ctx.fillText('빚어달라고 제가 청했습니까.', W / 2, 38); ctx.fillText('창조주여.', W / 2, 52); }
-  else { ctx.fillText('흙으로 나를 인간으로 빚어달라고', W / 2, 32); ctx.fillText('제가 청했습니까. 창조주여.', W / 2, 48); }
-  ctx.globalAlpha = 1;
-  ctx.textAlign = 'left';
-}
 
 function drawTitle() {
   ctx.fillStyle = '#ece6d6'; ctx.textAlign = 'center'; ctx.font = '12px Galmuri';
@@ -749,9 +742,8 @@ function typeTick() {
 const hintEl = document.getElementById('hint');
 const logoEl = document.getElementById('logo');
 function logoTick() {                                    // 타이틀: 첫 화면 창 / 시점 고르는 화면에서만
-  const cover = landing, pick = !landing && !howto && scene < 0 && !intro;
-  logoEl.classList.toggle('on', cover || pick);
-  logoEl.style.top = `calc(var(--ch) * ${cover ? .64 : .52})`;
+  logoEl.classList.toggle('on', !landing && !howto && scene < 0 && !intro);   // 시점 고르는 화면
+  logoEl.style.top = 'calc(var(--ch) * .52)';
 }
 function hintTick() {                                    // 지금 할 일 한 줄 (상자 열렸을 땐 숨김)
   let h = '';
@@ -779,6 +771,7 @@ front.addEventListener('pointermove', e => { if (flowDrag) flowY = flowDrag.at +
 ['pointerup', 'pointercancel'].forEach(ev => front.addEventListener(ev, () => { flowDrag = null; front.classList.remove('drag'); }));
 front.addEventListener('wheel', e => { flowY -= e.deltaY; }, { passive: true });
 document.getElementById('start').addEventListener('click', e => { e.stopPropagation(); startGame(); });
+document.getElementById('cover').addEventListener('click', e => { e.stopPropagation(); startGame(); });
 flowTick();
 const qs = new URLSearchParams(location.search).get('scene'); if (qs !== null) { landing = false; document.body.classList.remove('landing'); fit(); howto = false; enter(+qs); }
 const qi = new URLSearchParams(location.search).get('intro'); if (qi !== null) { landing = false; document.body.classList.remove('landing'); fit(); howto = false; startIntro(); for (let i = 0; i < +qi; i++) { box.ch = 999; stepBox(); } }
