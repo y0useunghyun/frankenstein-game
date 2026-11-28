@@ -15,12 +15,17 @@
   /* 아래 대화창: 게임 화면 밑에 따로 자리 잡은 칸 */
   #wrap { display: grid; grid-template-rows: auto auto; width: var(--cw); background: #07060a; }
   /* 대화창: 짙은 녹회색 판 + 얇은 테두리 하나 (장식 없이) */
-  #box { position: relative; box-sizing: border-box; min-height: var(--bh); margin: calc(var(--bh) * .12) 3% calc(var(--bh) * .1); padding: 1em 1.4em 1.3em;
-    background: #1f2421; border: 2px solid #9aa49a;
-    font-size: calc(var(--fs) * 1.1); line-height: 1.6; color: #e6ebe2; }
+  /* 대화창: 직접 그린 쇠 테두리(dialog.png)를 9조각으로 늘림. 도트 배율(--px)만큼 키움 */
+  #box { position: relative; box-sizing: border-box; min-height: var(--bh); margin: calc(var(--bh) * .08) 2% calc(var(--bh) * .06);
+    border-style: solid; border-color: transparent;
+    border-width: calc(13px * var(--bp)) calc(18px * var(--bp)) calc(18px * var(--bp)) calc(12px * var(--bp));   /* --bp = 도트 배율 × 0.7 */
+    border-image: url(dialog.png) 13 18 18 12 fill stretch; image-rendering: pixelated;
+    padding: .35em 1.4em .5em 1em; font-size: calc(var(--fs) * 1.1); line-height: 1.6; color: #ecebe6; }
+  #logo { position: absolute; left: 50%; transform: translate(-50%, -50%); width: var(--lw); image-rendering: pixelated; pointer-events: none; display: none; }
+  #logo.on { display: block; }
   #box { visibility: hidden; }                          /* 원문이 나올 때만 보임 (자리는 그대로라 화면이 안 출렁임) */
   #box.on { visibility: visible; }
-  #box .who { font-size: .7em; color: #9fb09c; margin-bottom: .2em; }
+  #box .who { font-size: .7em; color: #9a9ca4; margin-bottom: .2em; }
   body.landing #box { display: none; }
   #hint { position: absolute; z-index: 6; left: 50%; top: calc(var(--ch) * .17); transform: translateX(-50%); width: max-content; max-width: 78%; padding: .5em 1em;
     background: #0b0a0de6; border: 3px solid #f1d54a; color: #f1d54a; font-size: var(--fs); line-height: 1.45; text-align: center; display: none; }
@@ -33,7 +38,7 @@
   #roll h2 { font-size: 1.6em; font-weight: 400; text-align: center; margin: 0 0 .3em; }
   #roll .sub { text-align: center; opacity: .5; margin: 0 0 4em; }
   #roll .fin { text-align: center; font-size: 1.6em; margin: 4em 0 0; }
-  #box .more { position: absolute; left: 50%; bottom: .2em; transform: translateX(-50%); color: #b8c4b4; animation: blink 1s steps(2) infinite; }
+  #box .more { position: absolute; right: .2em; bottom: 0; color: #9a9ca4; animation: blink 1s steps(2) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
   /* 첫 화면: 원문이 흐르는 바탕 + 창 하나 + 버튼 하나 */
   #front { position: fixed; inset: 0; overflow: hidden; display: none; cursor: grab; }
@@ -65,6 +70,7 @@
 <div id="wrap">
   <div id="bar"><span>프랑켄슈타인</span><i>■□×</i></div>
   <canvas id="c" width="256" height="144"></canvas>
+  <img id="logo" src="title.png" alt="프랑켄슈타인">
   <div id="hint"></div>
   <div id="box"><div class="who" id="who"></div><div id="say"></div><span class="more">▼</span></div>
 </div>
@@ -165,7 +171,8 @@ function fit() {                                         // 정수 배율로 꽉
   const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : Math.min(innerWidth / W, innerHeight / (H * (1 + BOX)));
   const s = f >= 2 ? Math.floor(f) : f;   // 크면 정수 배율, 폰 세로는 꽉 차게
   cv.style.width = W * s + 'px'; cv.style.height = H * s + 'px';
-  const wr = document.getElementById('wrap'); wr.style.setProperty('--ch', H * s + 'px'); wr.style.setProperty('--cw', W * s + 'px'); wr.style.setProperty('--bh', H * s * BOX * 0.82 + 'px');
+  const wr = document.getElementById('wrap'); wr.style.setProperty('--ch', H * s + 'px'); wr.style.setProperty('--cw', W * s + 'px'); wr.style.setProperty('--px', s); wr.style.setProperty('--bp', Math.max(1, Math.round(s * 0.7 * 2) / 2));
+  wr.style.setProperty('--lw', Math.min(W * s * 0.82, H * s * 0.42 * 320 / 150) + 'px');   // 타이틀: 창 폭 82% 또는 높이 42% 중 작은 쪽 wr.style.setProperty('--bh', H * s * BOX * 0.82 + 'px');
   document.getElementById('wrap').style.setProperty('--fs', Math.max(13, s * 5.2) + 'px');
 }
 addEventListener('resize', fit); fit();
@@ -706,8 +713,6 @@ function drawCover() {                                   // 첫 화면 창 안: 
   if (W < 200) { ctx.fillText('흙으로 나를 인간으로', W / 2, 24); ctx.fillText('빚어달라고 제가 청했습니까.', W / 2, 38); ctx.fillText('창조주여.', W / 2, 52); }
   else { ctx.fillText('흙으로 나를 인간으로 빚어달라고', W / 2, 32); ctx.fillText('제가 청했습니까. 창조주여.', W / 2, 48); }
   ctx.globalAlpha = 1;
-  if ((t % 180) >= 6) { R(ctx, W / 2 - 14, 72, 6, 3, '#f1d54a'); R(ctx, W / 2 + 8, 72, 6, 3, '#f1d54a'); }
-  ctx.fillStyle = '#ece6d6'; ctx.font = (W < 200 ? 20 : 24) + 'px Galmuri'; ctx.fillText('프랑켄슈타인', W / 2, 108);
   ctx.textAlign = 'left';
 }
 
@@ -717,9 +722,6 @@ function drawTitle() {
   if (W < 200) { ctx.fillText('흙으로 나를 인간으로', W / 2, 18); ctx.fillText('빚어달라고 제가 청했습니까.', W / 2, 32); ctx.fillText('창조주여.', W / 2, 46); }
   else { ctx.fillText('흙으로 나를 인간으로 빚어달라고', W / 2, 24); ctx.fillText('제가 청했습니까. 창조주여.', W / 2, 40); }
   ctx.globalAlpha = 1;
-  const blink = (t % 180) < 6;                           // 노란 눈이 가끔 깜빡임
-  if (!blink) { R(ctx, W / 2 - 14, 60, 6, 3, '#f1d54a'); R(ctx, W / 2 + 8, 60, 6, 3, '#f1d54a'); }
-  ctx.fillStyle = '#ece6d6'; ctx.font = (W < 200 ? 20 : 24) + 'px Galmuri'; ctx.fillText('프랑켄슈타인', W / 2, 92);
   ctx.font = '12px Galmuri';
   const narrow = W < 200;
   [['괴물로 걷기', narrow ? W / 2 : W / 2 - 52, narrow ? 112 : 114], ['빅토르로 걷기', narrow ? W / 2 : W / 2 + 52, narrow ? 130 : 114]].forEach(([txt, x, y], i) => {
@@ -737,6 +739,12 @@ function typeTick() {
 }
 
 const hintEl = document.getElementById('hint');
+const logoEl = document.getElementById('logo');
+function logoTick() {                                    // 타이틀: 첫 화면 창 / 시점 고르는 화면에서만
+  const cover = landing, pick = !landing && !howto && scene < 0 && !intro;
+  logoEl.classList.toggle('on', cover || pick);
+  logoEl.style.top = `calc(var(--ch) * ${cover ? .64 : .52})`;
+}
 function hintTick() {                                    // 지금 할 일 한 줄 (상자 열렸을 땐 숨김)
   let h = '';
   if (ending === 5) h = '→ 꾹 누르면 빨리 · 스페이스로 건너뛰기';
@@ -746,7 +754,7 @@ function hintTick() {                                    // 지금 할 일 한 �
   hintEl.classList.toggle('on', !!h && !box);
   hintEl.classList.toggle('low', ending === 5);       // 크레딧 안내만 아래
 }
-(function loop() { update(); draw(); typeTick(); hintTick(); creditsTick(); requestAnimationFrame(loop); })();
+(function loop() { update(); draw(); typeTick(); hintTick(); logoTick(); creditsTick(); requestAnimationFrame(loop); })();
 // 확인용: ?scene=3
 const front = document.getElementById('front'), flow = document.getElementById('flow');
 { const N = window.NOVEL || '', i = N.indexOf('제1권편지 1'); flow.textContent = N.slice(i < 0 ? 0 : i).replace('제1권편지 1', '제1권 · 편지 1 — '); }
