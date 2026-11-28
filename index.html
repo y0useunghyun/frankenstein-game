@@ -66,9 +66,18 @@
   #start:active { transform: translateY(3px); box-shadow: 0 1px 0 #9a8420, 0 0 0 3px #0b0a0d; }
   body.landing #start { display: block; }
   body.landing .pad { display: none !important; }
-  /* 게임 판: 폰이 세로면 판째 옆으로 눕혀서 보여줌 (폰만 옆으로 돌려 들면 됨, 자동 회전 꺼져 있어도 OK) */
   #app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-  body.rot #app { inset: auto; top: 0; left: 0; width: var(--ah); height: var(--aw); transform-origin: 0 0; transform: translateX(var(--aw)) rotate(90deg); }
+  /* 폰 세로 = 게임기처럼: 위 게임 화면 · 그 아래 대화창 · 맨 아래 버튼 */
+  body.port #app { align-items: flex-start; padding-top: max(6vh, env(safe-area-inset-top)); }
+  body.port canvas { clip-path: inset(0 0 var(--bh) 0); }               /* 대화창 자리(바닥 연장)는 비워 둠 */
+  body.port #box { bottom: auto; top: calc(var(--ch) + 10px); left: 0; right: 0; }
+  body.port .pad { bottom: max(28px, env(safe-area-inset-bottom)); } body.port .pad button { width: 68px; height: 68px; }   /* 세로: 엄지로 누르기 좋게 크게 */
+  /* 폰 가로: 세로로 들어 달라는 안내 */
+  #turn { position: fixed; inset: 0; z-index: 30; background: #0b0a0d; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    font-family: var(--batang); font-size: 17px; color: #ece6d6; }
+  #turn i { width: 58px; height: 34px; border: 3px solid #ece6d6; border-radius: 6px; animation: turn 2.4s steps(1) infinite; }
+  @keyframes turn { 50% { transform: rotate(90deg); } }
+  @media (pointer: coarse) and (orientation: landscape) { #turn { display: flex; } }
   /* 손가락 버튼 (폰) */
   .pad { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); display: none; gap: 8px; }
   .pad button { width: 52px; height: 52px; border: 3px solid #ece6d6; background: #0b0a0daa; color: #ece6d6; font: 22px Galmuri, monospace; }
@@ -78,6 +87,7 @@
 </style>
 </head>
 <body class="landing">
+<div id="turn"><i></i>폰을 세로로 들어 주세요</div>
 <div id="front"><div id="flow"></div></div>
 <div id="app">
 <div id="stage">
@@ -182,12 +192,9 @@ const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 function fit() {                                         // 정수 배율로 꽉 차게
   W = 256; if (cv.width !== W) cv.width = W;          // 폰도 컴퓨터와 같은 화면
   const land = document.body.classList.contains('landing');
-  const rot = !land && matchMedia('(pointer: coarse)').matches && innerHeight > innerWidth;   // 폰 세로 → 판을 눕힘
-  document.body.classList.toggle('rot', rot);
-  document.body.style.setProperty('--aw', innerWidth + 'px'); document.body.style.setProperty('--ah', innerHeight + 'px');
-  const AW = rot ? innerHeight : innerWidth, AH = rot ? innerWidth : innerHeight;
-  const padW = !land && matchMedia('(pointer: coarse)').matches ? 2 * 132 : 0;   // 폰: 양옆에 ◀ ▶ / ● 자리를 비워 둠 (버튼이 대화창과 안 겹치게)
-  const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : Math.min((AW - padW) / W, AH / HH);
+  const port = !land && matchMedia('(pointer: coarse)').matches;      // 폰(세로로만 함): 게임기 배치
+  document.body.classList.toggle('port', port);
+  const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : port ? innerWidth / W : Math.min(innerWidth / W, innerHeight / HH);
   const s = f >= 2 ? Math.floor(f) : f;   // 크면 정수 배율, 폰 세로는 꽉 차게
   cv.style.width = W * s + 'px'; cv.style.height = HH * s + 'px';
   const wr = document.getElementById('wrap'); wr.style.setProperty('--ch', H * s + 'px'); wr.style.setProperty('--cw', W * s + 'px'); wr.style.setProperty('--px', s); wr.style.setProperty('--bp', Math.max(1, Math.round(s * 0.7 * 2) / 2));
@@ -613,7 +620,6 @@ document.querySelectorAll('.pad button').forEach(b => {
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => { if (k !== 'act') keys[k] = false; }));
 });
 cv.addEventListener('pointerdown', e => {               // 제목: 왼쪽 반 = 괴물, 오른쪽 반 = 빅토르
-  if (document.body.classList.contains('rot')) { act(); return; }   // 눕힌 화면에선 ◀ ▶로 고르고 누르면 시작
   if (scene < 0 && !intro) { const r = cv.getBoundingClientRect(), y = (e.clientY - r.top) / r.height * HH;
     const cy = HH / 2; if (W < 200) { if (Math.abs(y - cy) < 30) sel = y < cy + 5 ? 0 : 1; } else if (Math.abs(y - cy) < 16) { sel = (e.clientX - r.left) / r.width < 0.5 ? 0 : 1; } }
   act();
