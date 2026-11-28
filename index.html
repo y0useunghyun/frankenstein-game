@@ -66,6 +66,12 @@
   #start:active { transform: translateY(3px); box-shadow: 0 1px 0 #9a8420, 0 0 0 3px #0b0a0d; }
   body.landing #start { display: block; }
   body.landing .pad { display: none !important; }
+  /* 폰 세로: 가로로 돌려 달라는 안내 (첫 화면은 세로로도 볼 수 있음) */
+  #rotate { position: fixed; inset: 0; z-index: 20; background: #0b0a0d; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+    font-family: var(--batang); font-size: 17px; color: #ece6d6; text-align: center; }
+  #rotate i { width: 34px; height: 58px; border: 3px solid #ece6d6; border-radius: 6px; animation: turn 2.4s steps(1) infinite; }
+  @keyframes turn { 50% { transform: rotate(90deg); } }
+  @media (pointer: coarse) and (orientation: portrait) { body:not(.landing) #rotate { display: flex; } }
   /* 손가락 버튼 (폰) */
   .pad { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); display: none; gap: 12px; }
   .pad button { width: 64px; height: 64px; border: 3px solid #ece6d6; background: #0b0a0daa; color: #ece6d6; font: 22px Galmuri, monospace; }
@@ -75,6 +81,7 @@
 </style>
 </head>
 <body class="landing">
+<div id="rotate"><i></i>폰을 가로로 돌려 주세요</div>
 <div id="front"><div id="flow"></div></div>
 <div id="stage">
 <div id="wrap">
@@ -175,7 +182,7 @@ function sprite(map) {                                   // 글자 그림 → �
 let W = 256; const H = 144, FLOOR = 118, EXT = 58, HH = H + EXT;   // HH: 대화창 자리까지 바닥이 이어지는 전체 높이            // 폰 세로면 W = 160 (보이는 폭을 좁혀 크게)
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 function fit() {                                         // 정수 배율로 꽉 차게
-  W = innerWidth < innerHeight ? 160 : 256; if (cv.width !== W) cv.width = W;
+  W = 256; if (cv.width !== W) cv.width = W;          // 폰도 컴퓨터와 같은 화면 (세로면 가로로 돌리라는 안내)
   const land = document.body.classList.contains('landing');
   const f = land ? Math.min(innerWidth * 0.86 / W, (innerHeight - 150) / H, 3.2) : Math.min(innerWidth / W, innerHeight / HH);
   const s = f >= 2 ? Math.floor(f) : f;   // 크면 정수 배율, 폰 세로는 꽉 차게
@@ -274,6 +281,10 @@ let landing = true, howto = false;                      // 첫 화면 → (게�
 function startGame() {
   if (!landing) return;
   landing = false; howto = true; document.body.classList.remove('landing'); fit();
+  if (TOUCH) {                                           // 안드로이드: 전체 화면 + 가로 고정 (아이폰은 안 되면 그냥 넘어감)
+    const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;
+    try { const p = fs && fs.call(el); p && p.then && p.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {}); } catch (e) {}
+  }
 }
 const dist = (a, b) => Math.abs(a - b), walk = () => (t >> 3) % 2;
 const FELIX = VILLAGER.map(f => f.map(r => r.replace(/r/g, 'c')));
