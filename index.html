@@ -52,8 +52,8 @@
   body.landing #front { display: block; }
   #front.drag { cursor: grabbing; }
   :root { --batang: 'yoon-px-pixelbatang', Galmuri, serif; --gothic: 'yoon-px-windowgothic', Galmuri, sans-serif; }
-  #flow, #box, #roll { font-family: var(--batang); }   /* 원문 */
-  #start, #hint { font-family: var(--gothic); }        /* 버튼·안내 */
+  #flow, #box, #roll, #start { font-family: var(--batang); }   /* 원문·버튼 */
+  #hint { font-family: var(--gothic); }                         /* 안내 */
   #flow { position: absolute; left: 50%; top: 0; width: min(880px, 90vw); transform: translateX(-50%); will-change: transform;
     font-size: 15px; line-height: 1.9; color: #ece6d6; opacity: .3; word-break: keep-all; }
   #stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 22px; }
